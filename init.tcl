@@ -6,4 +6,5 @@ package require zmq
 package require tclkernel
 lassign $argv connection_file
 tclkernel::connect $connection_file
+vwait forever
 

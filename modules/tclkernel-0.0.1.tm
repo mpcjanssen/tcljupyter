@@ -3,7 +3,6 @@ namespace eval tclkernel {
 	set f [open $connection_file]
 	puts [read $f]
 	close $f
-	vwait forever
     }
 }
 
