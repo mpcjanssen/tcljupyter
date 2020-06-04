@@ -4,6 +4,6 @@ lappend auto_path [file join [file dirname [info script]] libs-$tcl_platform(pla
 package require Tcl 8.6
 package require tclkernel
 lassign $argv connection_file
-tclkernel::connect $connection_file
+connect $connection_file
 vwait forever
 
