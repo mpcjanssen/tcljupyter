@@ -20,25 +20,30 @@ proc connect {connection_file} {
     listen control ROUTER
     listen stdin ROUTER
     starthb
-    zmq socket iopub context PUB
-    iopub bind [address iopub]
+    zmq socket ::ports::iopub context PUB
+    ::ports::iopub bind [address iopub]
 }
+
 
 proc pub {msg} {
     
 }
 
-proc on_recv {port socket} {
+proc on_recv {port} {
+    set socket ::ports::$port
+    puts "$port [string repeat < 20]"
     set msg [zmsg recv $socket]
     set buffers [lassign $msg uuid delimiter hmac header parentheader metadata content]
-    puts "-> $port: $uuid"
-    puts "-> $port: $delimiter"
-    puts "-> $port: $hmac"
-    puts "-> $port: $header"  
-    puts "-> $port: $parentheader"
-    puts "-> $port: $metadata"
-    puts "-> $port: $content"
+    puts "uuid:    $uuid"
+    puts "delim:   $delimiter"
+    puts "hmac:    $hmac"
+    puts "header:  $header"  
+    puts "parent:  $parentheader"
+    puts "meta:    $metadata"
+    puts "content: $content"
 
+
+    puts "$port [string repeat > 20]"
     variable key
     set content "{}"
     set hmac [sha2::hmac -hex -key $key  "$header$parentheader$metadata$content"]
@@ -66,13 +71,14 @@ proc starthb {} {
     }}
 }
 
-proc listen {portname type} {
-    set sock [zmq socket context $type]
-    $sock bind [address $portname]
+proc listen {port type} {
+    set socket ::ports::$port
+    zmq socket $socket context $type
+    $socket bind [address $port]
     # bit of a nasty hack because readable callback is a single
     # command without arguments
-    interp alias {} on_recv_$portname {} on_recv $portname $sock
-    $sock readable on_recv_$portname
+    interp alias {} on_recv_$port {} on_recv $port
+    $socket readable on_recv_$port
 }
 
 proc address {portname} {
