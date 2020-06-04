@@ -32,23 +32,20 @@ proc starthb {} {
     thread::send $t -async {package require zmq}
     thread::send $t -async {zmq context context}
     thread::send $t -async [list zmq socket zsocket context REP]
-	thread::send $t -async [list zsocket bind [address hb]]
+    thread::send $t -async [list zsocket bind [address hb]]
     thread::send $t -async [puts [list start [address hb]]]
     thread::send $t -async {while {1} {
 	zmq device FORWARDER zsocket zsocket
-	}}
+    }}
 }
 
 proc listen {portname type} {
     set sock [zmq socket context $type]
-    
     $sock bind [address $portname]
-    puts $sock
     # bit of a nasty hack because readable callback is a single
     # command without arguments
     interp alias {} on_recv_$portname {} on_recv $portname $sock
     $sock readable on_recv_$portname
-    puts zzz
 }
 
 proc address {portname} {
@@ -56,8 +53,6 @@ proc address {portname} {
     set address [json get $conn transport]://
     append address [json get $conn ip]:
     append address [json get $conn ${portname}_port]
-    puts $address
     return $address
-    
 }
 
