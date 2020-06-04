@@ -1,4 +1,5 @@
 package require zmq
+package require Thread
 package require rl_json
 
 namespace eval tclkernel {
@@ -9,18 +10,27 @@ namespace eval tclkernel {
     set f [open $connection_file]
     set conn [read $f]
     puts $conn
-    zmq context context
-    listen hb REQ
+    listen hb REP
     listen shell ROUTER
     listen control ROUTER
-    puts [address hb]
+    listen stdin ROUTER
+    listen iopub PUB
+    puts ok
   }
 
   proc listen {portname type} {
-    set addr [address $portname]
-    zmq socket $portname context $type
-    $portname bind $addr
-    $portname readable [namespace code handle_$portname]
+    set t [thread::create]
+    thread::send $t -async [list set auto_path $::auto_path]
+    thread::send $t -async "package require zmq"
+    thread::send $t -async {zmq context context}
+    thread::send $t -async [list zmq socket zsocket context $type]
+    thread::send $t -async [list zsocket bind [address $portname]]
+    thread::send $t -async [puts [list start [address $portname]]]
+    thread::send $t -async {puts [zsocket recv]}
+    thread::send $t -async [list puts stdout $portname]
+    thread::send $t -async {puts end}
+    puts "here"
+
   }
 
   proc handle_hb {} {
