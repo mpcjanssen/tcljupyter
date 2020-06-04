@@ -1,15 +1,19 @@
 package require zmq
 package require Thread
 package require rl_json
+package require sha256
 
 namespace import ::rl_json::json
 
 set conn {}
+set key {}
 
 proc connect {connection_file} {
     variable conn
+    variable key
     set f [open $connection_file]
     set conn [read $f]
+    set key [json get $conn key]
     puts $conn
     zmq context context
     listen shell ROUTER
@@ -27,8 +31,26 @@ proc pub {msg} {
 proc on_recv {port socket} {
     set msg [zmsg recv $socket]
     set buffers [lassign $msg uuid delimiter hmac header parentheader metadata content]
+    puts "-> $port: $uuid"
+    puts "-> $port: $delimiter"
+    puts "-> $port: $hmac"
+    puts "-> $port: $header"  
+    puts "-> $port: $parentheader"
+    puts "-> $port: $metadata"
+    puts "-> $port: $content"
+
+    variable key
+    set content "{}"
+    set hmac [sha2::hmac -hex -key $key  "$header$parentheader$metadata$content"]
+    $socket sendmore $uuid
+    $socket sendmore $delimiter
+    $socket sendmore $hmac
+    $socket sendmore $header
+    $socket sendmore $parentheader
+    $socket sendmore $metadata
+    $socket send $content
     
-    puts "-> $port: $header"
+    
 }
 
 proc starthb {} {
