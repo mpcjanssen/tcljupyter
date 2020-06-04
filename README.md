@@ -5,4 +5,4 @@ Then change the paths in `kernel.json` to match your machine.
 
 ## Design
 
-![Design](http://plantuml.mpcjanssen.nl/png/TOr12i8m44NtESNWlXS8uYQhakLaMP3K3ZOGfp6J2DxUMeCeudB-Utz-yhc4KqYU2-nC3CHbO2IHiF0El811bJuTIvafRiX-azOQsCsP_BGfwFuuFHVAwUNqIXc4xW0MD6IwLfAYB7HhOb13M58TOQnoRo4w3RFdATBn8cU5xjd5NWFTV5JOGtCoIOsbSVk-rwrzrxOaBIpqCnRMtmy0)
+![Design](http://plantuml.mpcjanssen.nl/png/TOv12eCm44NtESNGVIuWfPki9CjnAPHOXnf8npGJ2zw-ebOjfTitxmylkfJzpKV76KucUE9SCvA8x_a4Ji2WYaV7Kc8Ayyb-NzPLpLMNoBMpWjKVf-HCAIvEgPH1qFe25Wf8z1n8ih8pCLY0x-FGG3F8k4Ai2kWSju6k3xahh1PQ5a0l5nIMczLwYS6D7yNkP7-_EViiaGmX7rOhc3BFMg-P4diM-kdqKzOR)
