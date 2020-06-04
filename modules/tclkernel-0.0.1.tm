@@ -81,11 +81,11 @@ proc listen {port type} {
     $socket readable on_recv_$port
 }
 
-proc address {portname} {
+proc address {port} {
     variable conn
     set address [json get $conn transport]://
     append address [json get $conn ip]:
-    append address [json get $conn ${portname}_port]
+    append address [json get $conn ${port}_port]
     return $address
 }
 
