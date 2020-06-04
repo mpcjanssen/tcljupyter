@@ -33,15 +33,15 @@ namespace eval tclkernel {
 
   proc listen {portname type} {
     set t [thread::create]
-    thread::send $t -async [list set auto_path $::auto_path]
-    thread::send $t -async "package require zmq"
-    thread::send $t -async {zmq context context}
-    thread::send $t -async [list zmq socket zsocket context $type]
-    thread::send $t -async [list zsocket bind [address $portname]]
-    thread::send $t -async [puts [list start [address $portname]]]
-    thread::send $t -async {puts [zsocket recv]}
-    thread::send $t -async [list puts stdout $portname]
-    thread::send $t -async {puts end}
+    thread::send -async  $t [list set auto_path $::auto_path]
+    thread::send  -async $t "package require zmq"
+    thread::send -async $t  {zmq context context}
+    thread::send -async $t  [list zmq socket zsocket context $type]
+    thread::send -async $t  [list zsocket bind [address $portname]]
+    thread::send -async $t  [puts [list start [address $portname]]]
+    thread::send -async $t  {while {1} {puts [zsocket recv]}}
+    thread::send -async $t  [list puts stdout $portname]
+    thread::send -async $t  {puts end}
     puts "here"
 
   }
