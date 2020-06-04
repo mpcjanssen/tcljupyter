@@ -16,13 +16,18 @@ proc connect {connection_file} {
     listen control ROUTER
     listen stdin ROUTER
     starthb
+    zmq socket iopub context PUB
+    iopub bind [address iopub]
+}
 
-    #	listen iopub PUB
+proc pub {msg} {
+    
 }
 
 proc on_recv {port socket} {
     set msg [zmsg recv $socket]
     set buffers [lassign $msg uuid delimiter hmac header parentheader metadata content]
+    
     puts "-> $port: $header"
 }
 
