@@ -45,7 +45,7 @@ proc on_recv {port} {
 
     puts "$port [string repeat > 20]"
     variable key
-    set content "{}"
+    set content $::kernel_info
     set hmac [sha2::hmac -hex -key $key  "$header$parentheader$metadata$content"]
     $socket sendmore $uuid
     $socket sendmore $delimiter
@@ -89,3 +89,16 @@ proc address {port} {
     return $address
 }
 
+
+set kernel_info { {
+    "status" : "ok",
+    "protocol_version": "5.3",
+    "implementation": "tcljupyter",
+    "implementation_version": "0.0.1",
+    "language_info": {
+        "name": "tcl",
+        "version": "8.6.10",
+        "mimetype": "txt/tcl",
+        "file_extension": ".tcl"
+    }
+}}
