@@ -36,17 +36,9 @@ proc on_recv {port} {
    parray ::sessions
     set socket ::ports::$port
     puts "$port [string repeat < 20]"
-    set msg [zmsg recv $socket]
-    set buffers [lassign $msg uuid delimiter hmac header parentheader metadata content]
-    puts "uuid:    $uuid"
-    puts "delim:   $delimiter"
-    puts "hmac:    $hmac"
-    puts "header:  $header"  
-    puts "parent:  $parentheader"
-    puts "meta:    $metadata"
-    puts "content: $content"
-    set tosocket $::sessions(abcd)
-    puts -nonewline $tosocket $msg
+    set msg [list $port {*}[zmsg recv $socket]]
+    set tosocket  $::sessions(abcd)
+    puts -nonewline $tosocket  $msg
     flush $tosocket    
 }
 
