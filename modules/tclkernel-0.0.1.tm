@@ -22,6 +22,7 @@ proc connect {connection_file} {
     starthb
     zmq socket ::ports::iopub context PUB
     ::ports::iopub bind [address iopub]
+    startsession abcd
 }
 
 
@@ -29,7 +30,10 @@ proc pub {msg} {
     
 }
 
+
+
 proc on_recv {port} {
+   parray ::sessions
     set socket ::ports::$port
     puts "$port [string repeat < 20]"
     set msg [zmsg recv $socket]
@@ -41,21 +45,32 @@ proc on_recv {port} {
     puts "parent:  $parentheader"
     puts "meta:    $metadata"
     puts "content: $content"
+    set tosocket [dict get $::sessions(abcd) to]
+    puts -nonewline $tosocket $msg
+    flush $tosocket    
+}
 
+proc incoming {chan session} {
+	puts $session
+	puts [read $chan]
 
-    puts "$port [string repeat > 20]"
-    variable key
-    set content $::kernel_info
-    set hmac [sha2::hmac -hex -key $key  "$header$parentheader$metadata$content"]
-    $socket sendmore $uuid
-    $socket sendmore $delimiter
-    $socket sendmore $hmac
-    $socket sendmore $header
-    $socket sendmore $parentheader
-    $socket sendmore $metadata
-    $socket send $content
-    
-    
+	
+}
+
+proc startsession {session} {
+    set t [thread::create]
+    lassign [chan pipe] fromSession toMaster
+    lassign [chan pipe] fromMaster toSession
+    fileevent $fromSession readable [list incoming $fromSession $session]
+    fconfigure $fromSession -blocking 0
+    puts [tcl::tm::path list]
+    set ::sessions($session) [list thread $t to $toSession]
+    thread::send $t [list set auto_path $::auto_path]
+    thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
+    thread::send $t {package require sessionclient}
+    thread::transfer $t $fromMaster
+    thread::transfer $t $toMaster
+    thread::send -async $t [list listen $fromMaster $toMaster]
 }
 
 proc starthb {} {
