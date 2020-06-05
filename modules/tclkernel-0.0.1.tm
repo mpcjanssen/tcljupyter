@@ -45,7 +45,7 @@ proc on_recv {port} {
     puts "parent:  $parentheader"
     puts "meta:    $metadata"
     puts "content: $content"
-    set tosocket [dict get $::sessions(abcd) to]
+    set tosocket $::sessions(abcd)
     puts -nonewline $tosocket $msg
     flush $tosocket    
 }
@@ -64,7 +64,7 @@ proc startsession {session} {
     fileevent $fromSession readable [list incoming $fromSession $session]
     fconfigure $fromSession -blocking 0
     puts [tcl::tm::path list]
-    set ::sessions($session) [list thread $t to $toSession]
+    set ::sessions($session) $toSession
     thread::send $t [list set auto_path $::auto_path]
     thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
     thread::send $t {package require sessionclient}
