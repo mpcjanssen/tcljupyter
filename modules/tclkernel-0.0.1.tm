@@ -123,7 +123,7 @@ proc address {port} {
 proc handle_info_request {jmsg} {
     dict with jmsg {
 	set parent $header
-	# bug: json set header msg_type kernel_info_reply
+	json set header msg_type kernel_info_reply
 	set content $::kernel_info
     }
     respond $jmsg
