@@ -50,7 +50,6 @@ proc on_recv {port} {
     set zmsg [zmsg recv $ports($port)]
     puts "REQ: $zmsg"
     set jmsg [jmsg::new [list $port {*}$zmsg]]
-    puts $jmsg
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
     puts "$port $type $session [string repeat < 20]"
@@ -138,7 +137,7 @@ set kernel_info { {
     "language_info": {
         "name": "tcl",
         "version": "8.6.10",
-        "mimetype": "txt/tcl",
+        "mimetype": "txt/x-tcl",
         "file_extension": ".tcl"
     }
 }}
