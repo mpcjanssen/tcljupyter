@@ -1,9 +1,6 @@
 package require zmq
 package require Thread
-package require rl_json
-package require sha256
-
-namespace import ::rl_json::json
+package require jmsg
 
 set conn {}
 set key {}
@@ -22,7 +19,6 @@ proc connect {connection_file} {
     starthb
     zmq socket ::ports::iopub context PUB
     ::ports::iopub bind [address iopub]
-    startsession abcd
 }
 
 
@@ -33,20 +29,23 @@ proc pub {msg} {
 
 
 proc on_recv {port} {
-   parray ::sessions
     set socket ::ports::$port
     puts "$port [string repeat < 20]"
-    set msg [list $port {*}[zmsg recv $socket]]
-    set tosocket  $::sessions(abcd)
-    puts -nonewline $tosocket  $msg
+    set jmsg [jmsg::new [list $port {*}[zmsg recv $socket]]]
+    puts $jmsg
+    set session [jmsg::session $jmsg]
+    puts $session
+    if {![info exists ::sessions($session)]} {
+	startsession $session
+    }
+    set tosocket  $::sessions($session)
+    puts -nonewline $tosocket  $jmsg
     flush $tosocket    
 }
 
 proc incoming {chan session} {
 	puts $session
-	puts [read $chan]
-
-	
+	puts [read $chan]	
 }
 
 proc startsession {session} {

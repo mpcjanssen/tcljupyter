@@ -10,6 +10,7 @@ proc recv {chan} {
     puts "parent:  $parentheader"
     puts "meta:    $metadata"
     puts "content: $content"
+    puts "buffers: $buffers"
 	puts $::pipe "test"
         flush $::pipe
 	puts ok
