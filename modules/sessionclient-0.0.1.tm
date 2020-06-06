@@ -1,7 +1,6 @@
 package require jmsg
 
 proc recv {chan} {
-    puts ++++++++++++->$::pipe
     set jmsg [read $chan]
     dict with jmsg {
 	puts "port:    $port"

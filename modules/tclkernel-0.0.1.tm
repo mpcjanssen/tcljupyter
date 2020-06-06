@@ -29,15 +29,17 @@ proc pub {session state} {
 }
 
 proc respond {jmsg} {
+    variable key
     variable ports
     set port [dict get $jmsg port]
     set session [jmsg::session $jmsg]
+    set jmsg [jmsg::updatehmac $jmsg $key]
     set zmsg [jmsg::znew $jmsg]
     puts "RESPOND: $zmsg"
     foreach msg [lrange $zmsg 0 end-1] {
 	$ports($port) sendmore $msg
     }
-    $ports($port) send [lindex $msg end]
+    $ports($port) send [lindex $zmsg end]
     pub $session idle
 }
 
@@ -45,15 +47,22 @@ proc respond {jmsg} {
 
 proc on_recv {port} {
     variable ports
-    puts "$port [string repeat < 20]"
-    set jmsg [jmsg::new [list $port {*}[zmsg recv $ports($port)]]]
+    set zmsg [zmsg recv $ports($port)]
+    puts "REQ: $zmsg"
+    set jmsg [jmsg::new [list $port {*}$zmsg]]
     puts $jmsg
     set session [jmsg::session $jmsg]
-    puts $session
+    set type [jmsg::type $jmsg]
+    puts "$port $type $session [string repeat < 20]"
     pub $session busy
     if {![info exists ::sessions($session)]} {
 	startsession $session
     }
+    if {$type eq "kernel_info_request"} {
+	handle_info_request $jmsg
+	return
+    }
+    return
     set tosocket  $::sessions($session)
     puts -nonewline $tosocket  $jmsg
     flush $tosocket    
@@ -70,7 +79,6 @@ proc startsession {session} {
     lassign [chan pipe] fromMaster toSession
     fileevent $fromSession readable [list incoming $fromSession]
     fconfigure $fromSession -blocking 0
-    puts [tcl::tm::path list]
     set ::sessions($session) $toSession
     thread::send $t [list set auto_path $::auto_path]
     thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
@@ -111,6 +119,16 @@ proc address {port} {
     return $address
 }
 
+
+proc handle_info_request {jmsg} {
+    dict with jmsg {
+	set parent $header
+	# bug: json set header msg_type kernel_info_reply
+	set content $::kernel_info
+    }
+    respond $jmsg
+    
+}
 
 set kernel_info { {
     "status" : "ok",

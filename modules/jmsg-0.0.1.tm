@@ -3,6 +3,13 @@ package require sha256
 namespace import ::rl_json::*
 namespace eval jmsg {
 
+    proc updatehmac {jmsg key} {
+	puts "Calculating hmac with key:$key"
+	dict with jmsg {
+	    set hmac [sha2::hmac -hex -key $key  "$header$parent$metadata$content"]
+	}
+	return $jmsg
+    }
 
     proc new {zmsg} {
 	set buffers [lassign $zmsg port uuid delimiter hmac header parent metadata content]
@@ -18,8 +25,7 @@ namespace eval jmsg {
     }
     proc znew {jmsg} {
 	dict with jmsg {
-	    set result {}
-	    lappend result $uuid
+	    set result $uuid
 	    lappend result $delimiter
 	    lappend result $hmac
 	    lappend result $header
