@@ -1,29 +1,27 @@
+package require jmsg
+
 proc recv {chan} {
-	puts ++++++++++++->$::pipe
-	set msg [read $chan]
-    set buffers [lassign $msg port uuid delimiter hmac header parentheader metadata content]
-    puts "port:    $port"
-    puts "uuid:    $uuid"
-    puts "delim:   $delimiter"
-    puts "hmac:    $hmac"
-    puts "header:  $header"  
-    puts "parent:  $parentheader"
-    puts "meta:    $metadata"
-    puts "content: $content"
-    puts "buffers: $buffers"
-	puts $::pipe "test"
-        flush $::pipe
-	puts ok
-
-
-	
+    puts ++++++++++++->$::pipe
+    set jmsg [read $chan]
+    dict with jmsg {
+	puts "port:    $port"
+	puts "uuid:    $uuid"
+	puts "delim:   $delimiter"
+	puts "hmac:    $hmac"
+	puts "header:  $header"  
+	puts "parent:  $parent"
+	puts "meta:    $metadata"
+	puts "content: $content"
+    }
+    puts $::pipe $jmsg
+    flush $::pipe
 }
 proc listen {from to} {
-   set ::pipe $to
-   fconfigure $from -blocking 0
-   fconfigure $from -translation binary
+    set ::pipe $to
+    fconfigure $from -blocking 0
+    fconfigure $from -translation binary
 
-   fileevent $from readable [list recv $from]
-   vwait forever
+    fileevent $from readable [list recv $from]
+    vwait forever
 }
 

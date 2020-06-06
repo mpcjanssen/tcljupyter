@@ -16,7 +16,24 @@ namespace eval jmsg {
 	dict set result content $content
 	return $result
     }
+    proc znew {jmsg} {
+	dict with jmsg {
+	    set result {}
+	    lappend result $uuid
+	    lappend result $delimiter
+	    lappend result $hmac
+	    lappend result $header
+	    lappend result $parent
+	    lappend result $metadata
+	    lappend result $content
+	    return $result
+	}
+    }
+    
     proc session {msg} {
 	json get [dict get $msg header] session		
+    }
+    proc type {msg} {
+	json get [dict get $msg header] msg_type		
     }
 }

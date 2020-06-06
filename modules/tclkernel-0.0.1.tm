@@ -4,10 +4,13 @@ package require jmsg
 
 set conn {}
 set key {}
+variable ports
+variable sessions
 
 proc connect {connection_file} {
     variable conn
     variable key
+    variable ports
     set f [open $connection_file]
     set conn [read $f]
     set key [json get $conn key]
@@ -17,24 +20,37 @@ proc connect {connection_file} {
     listen control ROUTER
     listen stdin ROUTER
     starthb
-    zmq socket ::ports::iopub context PUB
-    ::ports::iopub bind [address iopub]
+    set ports(iopub) [zmq socket context PUB]
+    $ports(iopub) bind [address iopub]
 }
 
+proc pub {session state} {
+    puts ">> IOopub $session $state"
+}
 
-proc pub {msg} {
-    
+proc respond {jmsg} {
+    variable ports
+    set port [dict get $jmsg port]
+    set session [jmsg::session $jmsg]
+    set zmsg [jmsg::znew $jmsg]
+    puts "RESPOND: $zmsg"
+    foreach msg [lrange $zmsg 0 end-1] {
+	$ports($port) sendmore $msg
+    }
+    $ports($port) send [lindex $msg end]
+    pub $session idle
 }
 
 
 
 proc on_recv {port} {
-    set socket ::ports::$port
+    variable ports
     puts "$port [string repeat < 20]"
-    set jmsg [jmsg::new [list $port {*}[zmsg recv $socket]]]
+    set jmsg [jmsg::new [list $port {*}[zmsg recv $ports($port)]]]
     puts $jmsg
     set session [jmsg::session $jmsg]
     puts $session
+    pub $session busy
     if {![info exists ::sessions($session)]} {
 	startsession $session
     }
@@ -43,16 +59,16 @@ proc on_recv {port} {
     flush $tosocket    
 }
 
-proc incoming {chan session} {
-	puts $session
-	puts [read $chan]	
+proc incoming {chan} {
+    set jmsg [read $chan]
+    respond $jmsg
 }
 
 proc startsession {session} {
     set t [thread::create]
     lassign [chan pipe] fromSession toMaster
     lassign [chan pipe] fromMaster toSession
-    fileevent $fromSession readable [list incoming $fromSession $session]
+    fileevent $fromSession readable [list incoming $fromSession]
     fconfigure $fromSession -blocking 0
     puts [tcl::tm::path list]
     set ::sessions($session) $toSession
@@ -78,13 +94,13 @@ proc starthb {} {
 }
 
 proc listen {port type} {
-    set socket ::ports::$port
-    zmq socket $socket context $type
-    $socket bind [address $port]
+    variable ports
+    set ports($port) [zmq socket context $type]
+    $ports($port) bind [address $port]
     # bit of a nasty hack because readable callback is a single
     # command without arguments
     interp alias {} on_recv_$port {} on_recv $port
-    $socket readable on_recv_$port
+    $ports($port) readable on_recv_$port
 }
 
 proc address {port} {
