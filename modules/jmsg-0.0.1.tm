@@ -59,11 +59,19 @@ namespace eval jmsg {
 	json get [dict get $msg header] msg_type		
     }
 
-    proc status {kernel_id parent state} {	
+    proc newiopub {kernel_id parent msg_type} {
 	set username [json get $parent username]
-	set header [jmsg::newheader $kernel_id $username status]
-	set content [json template {{"execution_state" : "~S:state"}}]
-	set jmsg [list port iopub uuid status delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
+	set header [jmsg::newheader $kernel_id $username $msg_type]
+	set content [json template {{}}]
+	set jmsg [list port iopub uuid $msg_type delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
+	return $jmsg 
+    }
+
+    proc status {kernel_id parent state} {
+	set jmsg [newiopub $kernel_id $parent status]
+	dict with jmsg {
+	    set content [json template {{"execution_state" : "~S:state"}}]   
+	}
 	return $jmsg    
     }
     

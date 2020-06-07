@@ -33,12 +33,12 @@ proc respond {jmsg} {
     }
    
     set zmsg [jmsg::znew $jmsg]
-    puts "RESPOND: $zmsg"
+    puts "$port [string repeat > 20]"
+    puts "RESPOND: [join $zmsg \n]\n\n"
     foreach msg [lrange $zmsg 0 end-1] {
 	$ports($port) sendmore $msg
     }
     $ports($port) send [lindex $zmsg end]
-    puts "$port [string repeat > 20]"
 
 }
 
@@ -48,8 +48,8 @@ proc on_recv {port} {
     variable ports
     variable kernel_id
     set zmsg [zmsg recv $ports($port)]
-    puts "$port [string repeat < 20]"
-    puts "REQ: $zmsg"
+    puts "\n\n\n\n$port [string repeat < 20]"
+    puts "REQ: [join $zmsg \n]\n"
     set jmsg [jmsg::new [list $port $kernel_id {*}$zmsg]]
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
@@ -66,8 +66,17 @@ proc on_recv {port} {
 }
 
 proc incoming {chan} {
-    set jmsg [read $chan]
-    respond $jmsg
+    set length {}
+    fconfigure $chan -blocking 1
+    while 1 {
+	set c [read $chan 1]
+	if {$c eq ":"} break
+	append length $c
+    }
+    # puts "Incoming message from session thread: length $length]"
+    set jmsg [read $chan $length]
+    # puts |||||||$jmsg\n
+    if {[catch {respond $jmsg} err]} { puts !!!!!!!!!!!!!!!!!!!$err }
 }
 
 proc startsession {session} {
