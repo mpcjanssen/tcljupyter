@@ -5,12 +5,28 @@ namespace import rl_json::json
 set pipe {}
 set exec_counter 0
 
+proc display {kernel_id parent mimetype body} {
+    set response [jmsg::newiopub $kernel_id $parent display_data]
+    dict with response {
+	set content [json template {
+	    {
+		"data":{"~S:mimetype": "~S:body"},
+		"metadata":{}
+	    }
+	}]
+    }
+    respond $response
+}
+
 proc execute_request {jmsg} {
     variable exec_counter
     incr exec_counter
     set status ok
     set ph [dict get $jmsg header]
     set kernel_id [dict get $jmsg kernel_id]
+
+    interp alias slave display {} display $kernel_id $ph
+    
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $kernel_id $ph execute_input]
     dict with response {
