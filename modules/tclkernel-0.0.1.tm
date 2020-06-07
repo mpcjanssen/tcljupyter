@@ -4,6 +4,7 @@ package require jmsg
 
 set conn {}
 set key {}
+set kernel_id [jmsg::newid]
 variable ports
 variable sessions
 
@@ -24,36 +25,50 @@ proc connect {connection_file} {
     $ports(iopub) bind [address iopub]
 }
 
-proc pub {session state} {
-    puts ">> IOopub $session $state"
+proc pub {parent state} {
+    variable kernel_id
+    set username [json get $parent username]
+    set header [jmsg::newheader $kernel_id $username status]
+    set content [json template {{"content": {"execution_state" : "~S:state"}}}]
+    puts zzzzzzzzzzzzzzz$content
+    set jmsg [list port iopub uuid $kernel_id delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {} content $content]
+    puts $jmsg
+    exit
+    puts ">> IOpub $parent $state"
+    respond $jmsg
+    
 }
 
 proc respond {jmsg} {
     variable key
     variable ports
     set port [dict get $jmsg port]
-    set session [jmsg::session $jmsg]
-    set jmsg [jmsg::updatehmac $jmsg $key]
+    dict with jmsg {
+    	set hmac [sha2::hmac -hex -key $key  "$header$parent$metadata$content"] 
+    }
+   
     set zmsg [jmsg::znew $jmsg]
     puts "RESPOND: $zmsg"
     foreach msg [lrange $zmsg 0 end-1] {
 	$ports($port) sendmore $msg
     }
     $ports($port) send [lindex $zmsg end]
-    pub $session idle
+    set psession [jmsg::parent_session $jmsg]
+    pub [dict get $jmsg parent] idle
 }
 
 
 
 proc on_recv {port} {
     variable ports
+    variable kernel_id
     set zmsg [zmsg recv $ports($port)]
     puts "REQ: $zmsg"
-    set jmsg [jmsg::new [list $port {*}$zmsg]]
+    set jmsg [jmsg::new [list $port $kernel_id {*}$zmsg]]
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
     puts "$port $type $session [string repeat < 20]"
-    pub $session busy
+    pub [dict get $jmsg header] busy
     if {![info exists ::sessions($session)]} {
 	startsession $session
     }

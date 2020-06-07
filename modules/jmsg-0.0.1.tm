@@ -1,18 +1,30 @@
 package require rl_json
 package require sha256
+package require uuid
 namespace import ::rl_json::*
 namespace eval jmsg {
 
-    proc updatehmac {jmsg key} {
-	puts "Calculating hmac with key:$key"
-	dict with jmsg {
-	    set hmac [sha2::hmac -hex -key $key  "$header$parent$metadata$content"]
-	}
-	return $jmsg
+    proc newheader {kernelid username msg_type} {
+	set msg_id [newid]
+	set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
+	json template {
+	    {"msg_id":"~S:msg_id",
+		"msg_type":"~S:msg_type",
+		"username":"~S:username",
+		"session":"~S:kernelid",
+		"date":"~S:date",
+		"version":"5.3"
+	    }
+	}  
+    }
+ 
+    proc newid {} {
+ 	return [string map {- {}} [uuid::uuid generate]]   
     }
 
     proc new {zmsg} {
-	set buffers [lassign $zmsg port uuid delimiter hmac header parent metadata content]
+	set buffers [lassign $zmsg port kernel_id uuid delimiter hmac header parent metadata content]
+	dict set result kernel_id $kernel_id
 	dict set result port $port
 	dict set result uuid $uuid
 	dict set result delimiter $delimiter
@@ -39,6 +51,10 @@ namespace eval jmsg {
     proc session {msg} {
 	json get [dict get $msg header] session		
     }
+    proc parent_session {msg} {
+	json get [dict get $msg parent] session		
+    }
+
     proc type {msg} {
 	json get [dict get $msg header] msg_type		
     }
