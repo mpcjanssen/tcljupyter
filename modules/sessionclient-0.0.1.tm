@@ -87,7 +87,7 @@ proc execute_request {jmsg} {
 		}
 	    }]
 	} else {
-	    puts $error
+	    # puts $error
 	    dict with error {
 		set content [json template {
 		    {
@@ -129,10 +129,10 @@ proc recv {chan} {
     set parent [dict get $jmsg header]
     set msg_type [json get $parent msg_type]
     if {[info commands $msg_type] ne {}} {
-	puts "Handling $msg_type"
+	# puts "Handling $msg_type"
 	handle $msg_type $jmsg
     } else {
-	puts "Not handling $msg_type"
+	# puts "Not handling $msg_type"
     }
 }
 
