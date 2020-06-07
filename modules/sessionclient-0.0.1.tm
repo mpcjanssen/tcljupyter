@@ -18,8 +18,6 @@ proc execute_request {jmsg} {
 	    {
 		"code":"~S:code",
 		"execution_count":"~N:exec_counter"
-		
-		
 	    }
 	}]
     }
@@ -27,17 +25,21 @@ proc execute_request {jmsg} {
     
 
     
-    
+    set error {}
     if {[catch {slave eval $code} result]} {
+	set error [list ename $::errorCode traceback [lrange [split $::errorInfo \n] 0 end-2] evalue $result]
 	set response [jmsg::newiopub $kernel_id $ph error]
 	dict with response {
-	    set content [json template {
-		{
-		    "ename":"~S:errorCode",
-		    "evalue":"~S:result",
-		    "traceback":"~S:errorInfo"
-		}
-	    }]
+	    dict with error {
+		set content [json template {
+		    {
+			"ename":"~S:ename",
+			"evalue":"~S:evalue"
+		    }
+		}]
+		json set content traceback [json array {*}[lmap x [dict get $error traceback] {list string $x}]]
+	    }
+
 	}
 	set status error
 	respond $response
@@ -46,7 +48,7 @@ proc execute_request {jmsg} {
 	dict with response {
 	    set content [json template {
 		{
-		    "data":"~S:result",
+		    "data":{"text/plain": "~S:result"},
 		    "execution_count":"~N:exec_counter"
 		    
 
@@ -58,15 +60,32 @@ proc execute_request {jmsg} {
     dict with jmsg {
 	set parent $header
 	set username [json get $header username]
-	set header  [jmsg::newheader $kernel_id $username execute_reply] 
-	set content [json template {
+	set header  [jmsg::newheader $kernel_id $username execute_reply]
+	if {$status eq "ok"} {
+	    set content [json template {
 		{
 		    "status":"~S:status",
 		    "execution_count":"~N:exec_counter",
 		    "user_expressions": {}
-
+		    
 		}
 	    }]
+	} else {
+	    puts $error
+	    dict with error {
+		set content [json template {
+		    {
+			"status":"~S:status",
+			"ename":"~S:ename",
+			"evalue": "~S:evalue",
+			"execution_count":"~N:exec_counter"
+		    }
+		}]
+		json set content traceback [json array {*}[lmap x [lrange [dict get $error traceback] 0 end-2] {list string $x}]]
+     
+	    }
+	    
+	}
     }
     respond $jmsg
 }
