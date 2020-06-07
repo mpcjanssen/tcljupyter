@@ -24,15 +24,6 @@ proc connect {connection_file} {
     $ports(iopub) bind [address iopub]
 }
 
-proc pub {parent state} {
-    variable kernel_id
-    set username [json get $parent username]
-    set header [jmsg::newheader $kernel_id $username status]
-    set content [json template {{"execution_state" : "~S:state"}}]
-    set jmsg [list port iopub uuid status delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
-    respond $jmsg    
-}
-
 proc respond {jmsg} {
     variable key
     variable ports
@@ -47,6 +38,8 @@ proc respond {jmsg} {
 	$ports($port) sendmore $msg
     }
     $ports($port) send [lindex $zmsg end]
+    puts "$port [string repeat > 20]"
+
 }
 
 
@@ -55,12 +48,11 @@ proc on_recv {port} {
     variable ports
     variable kernel_id
     set zmsg [zmsg recv $ports($port)]
+    puts "$port [string repeat < 20]"
     puts "REQ: $zmsg"
     set jmsg [jmsg::new [list $port $kernel_id {*}$zmsg]]
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
-    puts "$port $type $session [string repeat < 20]"
-    pub [dict get $jmsg header] busy
     if {![info exists ::sessions($session)]} {
 	startsession $session
     }
@@ -76,7 +68,6 @@ proc on_recv {port} {
 proc incoming {chan} {
     set jmsg [read $chan]
     respond $jmsg
-    pub [dict get $jmsg parent] idle
 }
 
 proc startsession {session} {
@@ -127,6 +118,9 @@ proc address {port} {
 
 
 proc handle_info_request {jmsg} {
+    set kernel_id [dict get $jmsg kernel_id]
+    set parent [dict get $jmsg header]
+    respond [jmsg::status $kernel_id $parent busy]
     dict with jmsg {
 	set parent $header
 	set username [json get $header username]
@@ -134,7 +128,7 @@ proc handle_info_request {jmsg} {
 	set content $::kernel_info
     }
     respond $jmsg
-    pub [dict get $jmsg parent] idle    
+    respond [jmsg::status $kernel_id $parent idle]
 }
 
 set kernel_info { {

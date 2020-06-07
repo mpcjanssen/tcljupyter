@@ -1,22 +1,33 @@
 package require jmsg
 
+set pipe {}
+
+proc respond {jmsg} {
+    variable ::pipe
+    puts $pipe $jmsg
+    flush $pipe
+}
+
+proc handle {jmsg} {
+    set kernel_id [dict get $jmsg kernel_id]
+    set parent [dict get $jmsg header]
+
+    respond [jmsg::status $kernel_id $parent busy]
+    
+    respond [jmsg::status $kernel_id $parent idle]
+
+}
+
 proc recv {chan} {
     set jmsg [read $chan]
-    dict with jmsg {
-	puts "port:    $port"
-	puts "uuid:    $uuid"
-	puts "delim:   $delimiter"
-	puts "hmac:    $hmac"
-	puts "header:  $header"  
-	puts "parent:  $parent"
-	puts "meta:    $metadata"
-	puts "content: $content"
+    set kernel_id [dict get $jmsg kernel_id]
+    set parent [dict get $jmsg header]
+    set msg_type [json get $parent msg_type]
+    if {[info commands $msg_type] ne {}} {
+	$msg_type $jmsg
     }
-    return
-    puts $::pipe $jmsg
-    
-    flush $::pipe
 }
+
 proc listen {from to} {
     set ::pipe $to
     fconfigure $from -blocking 0

@@ -17,7 +17,7 @@ namespace eval jmsg {
 	    }
 	}  
     }
- 
+    
     proc newid {} {
  	return [string map {- {}} [uuid::uuid generate]]   
     }
@@ -58,4 +58,13 @@ namespace eval jmsg {
     proc type {msg} {
 	json get [dict get $msg header] msg_type		
     }
+
+    proc status {kernel_id parent state} {	
+	set username [json get $parent username]
+	set header [jmsg::newheader $kernel_id $username status]
+	set content [json template {{"execution_state" : "~S:state"}}]
+	set jmsg [list port iopub uuid status delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
+	return $jmsg    
+    }
+    
 }
