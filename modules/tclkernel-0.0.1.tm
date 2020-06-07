@@ -15,7 +15,6 @@ proc connect {connection_file} {
     set f [open $connection_file]
     set conn [read $f]
     set key [json get $conn key]
-    puts $conn
     zmq context context
     listen shell ROUTER
     listen control ROUTER
@@ -29,10 +28,9 @@ proc pub {parent state} {
     variable kernel_id
     set username [json get $parent username]
     set header [jmsg::newheader $kernel_id $username status]
-    set content [json template {{"content": {"execution_state" : "~S:state"}}}]
-    set jmsg [list port iopub uuid status delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {} content $content]
-    respond $jmsg
-    
+    set content [json template {{"execution_state" : "~S:state"}}]
+    set jmsg [list port iopub uuid status delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
+    respond $jmsg    
 }
 
 proc respond {jmsg} {
@@ -49,7 +47,6 @@ proc respond {jmsg} {
 	$ports($port) sendmore $msg
     }
     $ports($port) send [lindex $zmsg end]
-    set psession [jmsg::parent_session $jmsg]
 }
 
 
@@ -71,7 +68,6 @@ proc on_recv {port} {
 	handle_info_request $jmsg
 	return
     }
-    return
     set tosocket  $::sessions($session)
     puts -nonewline $tosocket  $jmsg
     flush $tosocket    
@@ -138,7 +134,7 @@ proc handle_info_request {jmsg} {
 	set content $::kernel_info
     }
     respond $jmsg
-    
+    pub [dict get $jmsg parent] idle    
 }
 
 set kernel_info { {

@@ -12,7 +12,9 @@ proc recv {chan} {
 	puts "meta:    $metadata"
 	puts "content: $content"
     }
+    return
     puts $::pipe $jmsg
+    
     flush $::pipe
 }
 proc listen {from to} {
