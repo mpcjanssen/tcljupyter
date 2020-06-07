@@ -1,5 +1,5 @@
 package require jmsg
-package require rl_json
+package require rl_json 0.11.0-
 namespace import rl_json::json
 
 set pipe {}

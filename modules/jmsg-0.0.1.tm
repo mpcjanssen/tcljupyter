@@ -1,4 +1,4 @@
-package require rl_json
+package require rl_json 0.11.0-
 package require sha256
 package require uuid
 namespace import ::rl_json::*
