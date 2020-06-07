@@ -26,6 +26,7 @@ proc execute_request {jmsg} {
     set kernel_id [dict get $jmsg kernel_id]
 
     interp alias slave display {} display $kernel_id $ph
+    interp alias slave html {} display $kernel_id $ph text/html
     
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $kernel_id $ph execute_input]
