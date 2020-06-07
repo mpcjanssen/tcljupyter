@@ -30,11 +30,7 @@ proc pub {parent state} {
     set username [json get $parent username]
     set header [jmsg::newheader $kernel_id $username status]
     set content [json template {{"content": {"execution_state" : "~S:state"}}}]
-    puts zzzzzzzzzzzzzzz$content
-    set jmsg [list port iopub uuid $kernel_id delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {} content $content]
-    puts $jmsg
-    exit
-    puts ">> IOpub $parent $state"
+    set jmsg [list port iopub uuid status delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {} content $content]
     respond $jmsg
     
 }
@@ -54,7 +50,6 @@ proc respond {jmsg} {
     }
     $ports($port) send [lindex $zmsg end]
     set psession [jmsg::parent_session $jmsg]
-    pub [dict get $jmsg parent] idle
 }
 
 
@@ -85,6 +80,7 @@ proc on_recv {port} {
 proc incoming {chan} {
     set jmsg [read $chan]
     respond $jmsg
+    pub [dict get $jmsg parent] idle
 }
 
 proc startsession {session} {
@@ -137,7 +133,8 @@ proc address {port} {
 proc handle_info_request {jmsg} {
     dict with jmsg {
 	set parent $header
-	json set header msg_type kernel_info_reply
+	set username [json get $header username]
+	set header  [jmsg::newheader $kernel_id $username kernel_info_reply] 
 	set content $::kernel_info
     }
     respond $jmsg
