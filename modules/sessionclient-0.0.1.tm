@@ -34,6 +34,7 @@ proc listen {from to} {
     fconfigure $from -translation binary
 
     fileevent $from readable [list recv $from]
+    interp create slave
     vwait forever
 }
 
