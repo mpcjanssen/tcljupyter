@@ -101,7 +101,6 @@ proc starthb {} {
     thread::send $t -async {zmq context context}
     thread::send $t -async [list zmq socket zsocket context REP]
     thread::send $t -async [list zsocket bind [address hb]]
-    thread::send $t -async [puts [list start [address hb]]]
     thread::send $t -async {while {1} {
 	zmq device FORWARDER zsocket zsocket
     }}
@@ -134,7 +133,8 @@ proc handle_info_request {jmsg} {
 	set parent $header
 	set username [json get $header username]
 	set header  [jmsg::newheader $kernel_id $username kernel_info_reply] 
-	set content $::kernel_info
+	set version [info patchlevel]
+	set content [json template $::kernel_info]
     }
     respond $jmsg
     respond [jmsg::status $kernel_id $parent idle]
@@ -147,7 +147,7 @@ set kernel_info { {
     "implementation_version": "0.0.1",
     "language_info": {
         "name": "tcl",
-        "version": "8.6.10",
+        "version": "~S:version",
         "mimetype": "txt/x-tcl",
         "file_extension": ".tcl"
     }
