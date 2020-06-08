@@ -3,10 +3,42 @@ package require rl_json 0.11.0-
 namespace import rl_json::json
 
 set pipe {}
+set ph {}
+set kernel_id {}
 set exec_counter 0
 
-proc display {kernel_id parent mimetype body} {
-    set response [jmsg::newiopub $kernel_id $parent display_data]
+proc writechan {name cmd args} {
+    switch -exact $cmd {
+	initialize { return {initialize finalize write}}
+	write {
+	    lassign $args handle buffer
+	    set text [encoding convertfrom [fconfigure stdout -encoding] $buffer]
+	    stream $name $text
+	    return $buffer
+	}
+    }
+}
+
+
+proc stream {name text} {
+    variable ph
+    variable kernel_id    
+    set response [jmsg::newiopub $kernel_id $ph stream]
+    dict with response {
+	set content [json template {
+	    {
+		"name":"~S:name",
+		"text":"~S:text"
+	    }
+	}]
+    }
+    respond $response
+}
+
+proc display {mimetype body} {
+    variable ph
+    variable kernel_id
+    set response [jmsg::newiopub $kernel_id $ph display_data]
     dict with response {
 	set content [json template {
 	    {
@@ -19,14 +51,16 @@ proc display {kernel_id parent mimetype body} {
 }
 
 proc execute_request {jmsg} {
+    variable ph
+    variable kernel_id
     variable exec_counter
     incr exec_counter
     set status ok
     set ph [dict get $jmsg header]
     set kernel_id [dict get $jmsg kernel_id]
 
-    interp alias slave ::jupyter::display {} display $kernel_id $ph
-    interp alias slave ::jupyter::html {} display $kernel_id $ph text/html
+    interp alias slave ::jupyter::display {} display
+    interp alias slave ::jupyter::html {} display text/html
     
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $kernel_id $ph execute_input]
@@ -42,24 +76,8 @@ proc execute_request {jmsg} {
     
 
     
-    set error {}
     if {[catch {slave eval $code} result]} {
-	set error [list ename $::errorCode traceback [lrange [split $::errorInfo \n] 0 end-2] evalue $result]
-	set response [jmsg::newiopub $kernel_id $ph error]
-	dict with response {
-	    dict with error {
-		set content [json template {
-		    {
-			"ename":"~S:ename",
-			"evalue":"~S:evalue"
-		    }
-		}]
-		json set content traceback [json array {*}[lmap x [dict get $error traceback] {list string $x}]]
-	    }
-
-	}
-	set status error
-	respond $response
+	puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
     } else {
 	set response [jmsg::newiopub $kernel_id $ph execute_result]
 	dict with response {
@@ -78,31 +96,14 @@ proc execute_request {jmsg} {
 	set parent $header
 	set username [json get $header username]
 	set header  [jmsg::newheader $kernel_id $username execute_reply]
-	if {$status eq "ok"} {
-	    set content [json template {
-		{
-		    "status":"~S:status",
-		    "execution_count":"~N:exec_counter",
-		    "user_expressions": {}
+	set content [json template {
+	    {
+		"status":"~S:status",
+		"execution_count":"~N:exec_counter",
+		"user_expressions": {}
 		    
-		}
-	    }]
-	} else {
-	    # puts $error
-	    dict with error {
-		set content [json template {
-		    {
-			"status":"~S:status",
-			"ename":"~S:ename",
-			"evalue": "~S:evalue",
-			"execution_count":"~N:exec_counter"
-		    }
-		}]
-		json set content traceback [json array {*}[lmap x [lrange [dict get $error traceback] 0 end-2] {list string $x}]]
-     
 	    }
-	    
-	}
+	}]	 
     }
     respond $jmsg
 }
@@ -141,8 +142,10 @@ proc listen {from to} {
     set ::pipe $to
     fconfigure $from -blocking 0
     fconfigure $from -translation binary
-
     fileevent $from readable [list recv $from]
+    # redirect stdout and stderr
+    chan push stdout {writechan stdout} 
+    chan push stderr {writechan stderr} 
     interp create slave
     vwait forever
 }
