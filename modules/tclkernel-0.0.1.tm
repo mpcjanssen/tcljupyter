@@ -22,6 +22,12 @@ proc connect {connection_file} {
   starthb
   set ports(iopub) [zmq socket context PUB]
   $ports(iopub) bind [address iopub]
+  # Workaround to prevent losing few first messages on kernel startup
+  # For more information on losing messages see this scheme:
+  # http://zguide.zeromq.org/page:all#Missing-Message-Problem-Solver
+  # It seems we cannot do correct sync because messaging protocol
+  # doesn't support this. Value of 500 ms was chosen experimentally.
+  after 500
 }
 
 proc respond {jmsg} {
@@ -39,10 +45,7 @@ proc respond {jmsg} {
     $ports($port) sendmore $msg
   }
   $ports($port) send [lindex $zmsg end]
-
 }
-
-
 
 proc on_recv {port} {
   variable ports
@@ -55,6 +58,9 @@ proc on_recv {port} {
   set type [jmsg::type $jmsg]
   if {$type eq "kernel_info_request"} {
     handle_info_request $jmsg
+    return
+  }
+  if {$type eq "comm_info_request"} {
     return
   }
   if {$port eq "control"} {

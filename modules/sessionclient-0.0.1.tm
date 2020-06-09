@@ -105,7 +105,6 @@ proc bgerror {jmsg kernel_id ph tid errorInfo} {
   }
   respond $jmsg
   respond [jmsg::status $kernel_id $ph idle]  
-  thread::errorproc {}
 }
 
 proc execute_request {jmsg} {
@@ -115,8 +114,6 @@ proc execute_request {jmsg} {
   incr exec_counter
   set ph [dict get $jmsg header]
   set kernel_id [dict get $jmsg kernel_id]
-  thread::errorproc errorproc
-  interp alias {} errorproc {} bgerror $jmsg $kernel_id $ph
 
   set code [json get [dict get $jmsg content] code]
   set response [jmsg::newiopub $kernel_id $ph execute_input]
@@ -131,6 +128,8 @@ proc execute_request {jmsg} {
   respond $response
 
   respond [jmsg::status $kernel_id $ph busy]
+  interp alias {} errorproc {} bgerror $jmsg $kernel_id $ph
+  thread::errorproc errorproc
   if {[catch {slave eval $code} result]} {
     puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
   } else {
@@ -158,25 +157,3 @@ proc respond {jmsg} {
   variable ::master
   thread::send -async $master [list respond $jmsg]
 }
-
-proc start {} {
-# redirect stdout and stderr
-  chan push stdout {writechan stdout} 
-  chan push stderr {writechan stderr} 
-  interp create slave
-  interp alias slave ::jupyter::display {} display
-  interp alias slave ::jupyter::updatedisplay {} updatedisplay
-  slave eval {
-    namespace eval jupyter {
-      proc html {body} {
-        return [display text/html $body]
-      }
-      proc updatehtml {id body} {
-        return [updatedisplay $id text/html $body]
-      }
-      namespace export display updatedisplay html updatehtml
-    }
-  }
-}
-
-
