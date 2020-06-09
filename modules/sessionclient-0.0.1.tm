@@ -15,7 +15,7 @@ proc writechan {name cmd args} {
       lassign $args handle buffer
       set text [encoding convertfrom [fconfigure stdout -encoding] $buffer]
       stream $name $text
-      return $buffer
+      return ""
     }
   }
 }
