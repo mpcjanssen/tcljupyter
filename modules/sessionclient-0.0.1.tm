@@ -159,7 +159,7 @@ proc respond {jmsg} {
   thread::send -async $master [list respond $jmsg]
 }
 
-proc listen {} {
+proc start {} {
 # redirect stdout and stderr
   chan push stdout {writechan stdout} 
   chan push stderr {writechan stderr} 

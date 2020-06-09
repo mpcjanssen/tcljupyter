@@ -80,7 +80,7 @@ proc startsession {session} {
   thread::send $t [list set auto_path $::auto_path]
   thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
   thread::send $t {package require sessionclient}
-  thread::send -async $t listen
+  thread::send $t start
 }
 
 proc starthb {} {
