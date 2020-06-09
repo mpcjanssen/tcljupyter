@@ -6,6 +6,7 @@ set pipe {}
 set ph {}
 set kernel_id {}
 set exec_counter 0
+set display_id 0
 
 proc writechan {name cmd args} {
     switch -exact $cmd {
@@ -36,6 +37,9 @@ proc stream {name text} {
 }
 
 proc display {mimetype body} {
+  variable display_id
+  incr display_id
+set id display-id-$display_id
     variable ph
     variable kernel_id
     set response [jmsg::newiopub $kernel_id $ph display_data]
@@ -43,8 +47,30 @@ proc display {mimetype body} {
 	set content [json template {
 	    {
 		"data":{"~S:mimetype": "~S:body"},
-		"metadata":{}
+		"metadata":{},
+    "transient":{
+      "display_id":"~S:id"
 	    }
+	    }
+	}]
+    }
+    respond $response
+    return $id
+}
+
+proc updatedisplay {id mimetype body} {
+    variable ph
+    variable kernel_id
+    set response [jmsg::newiopub $kernel_id $ph update_display_data]
+    dict with response {
+	set content [json template {
+	    {
+		"data":{"~S:mimetype": "~S:body"},
+		"metadata":{},
+    "transient":{
+      "display_id":"~S:id"
+	    }
+    }
 	}]
     }
     respond $response
@@ -61,6 +87,7 @@ proc execute_request {jmsg} {
 
     interp alias slave ::jupyter::display {} display
     interp alias slave ::jupyter::html {} display text/html
+    interp alias slave ::jupyter::updatedisplay {} updatedisplay
     
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $kernel_id $ph execute_input]
