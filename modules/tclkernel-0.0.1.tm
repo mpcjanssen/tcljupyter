@@ -124,6 +124,13 @@ proc handle_control_request {jmsg} {
       set shutdown 1
       set reply_type shutdown_reply
     }
+    interrupt_request {
+      set reply_type interrupt_reply
+      set session [json get $ph session]
+      set to  $::sessions($session)
+      thread::cancel -unwind $to
+
+    }
   }
   dict with jmsg {
     set parent $ph
