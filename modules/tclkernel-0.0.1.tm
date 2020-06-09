@@ -79,8 +79,26 @@ proc startsession {session} {
   thread::send $t [list set master [thread::id]]
   thread::send $t [list set auto_path $::auto_path]
   thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
-  thread::send $t {package require sessionclient}
-  thread::send $t start
+  thread::send -async $t {
+    package require sessionclient
+    chan push stdout {writechan stdout} 
+    chan push stderr {writechan stderr} 
+    interp create slave
+    interp alias slave ::jupyter::display {} display
+    interp alias slave ::jupyter::updatedisplay {} updatedisplay
+    slave eval {
+      namespace eval jupyter {
+        proc html {body} {
+          return [display text/html $body]
+        }
+        proc updatehtml {id body} {
+          return [updatedisplay $id text/html $body]
+        }
+        namespace export display updatedisplay html updatehtml
+      }
+    }
+    thread::wait 
+  }
 }
 
 proc starthb {} {
