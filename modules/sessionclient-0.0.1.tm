@@ -36,7 +36,7 @@ proc stream {name text} {
   respond $response
 }
 
-proc display_data {mimetype body} {
+proc display_data {mimetype body id} {
   if {$mimetype ne "application/json"} {
     set content [json template {
       {
@@ -71,7 +71,7 @@ proc display {mimetype body} {
   variable kernel_id
   set response [jmsg::newiopub $kernel_id $ph display_data]
   dict with response {
-    set content [display_data $mimetype $body]
+    set content [display_data $mimetype $body $id]
   }
   respond $response
   return $id
@@ -82,7 +82,7 @@ proc updatedisplay {id mimetype body} {
   variable kernel_id
   set response [jmsg::newiopub $kernel_id $ph update_display_data]
   dict with response {
-    set content [display_data $mimetype $body]
+    set content [display_data $mimetype $body $id]
   }
   respond $response
 }
@@ -96,8 +96,18 @@ proc execute_request {jmsg} {
   set kernel_id [dict get $jmsg kernel_id]
 
   interp alias slave ::jupyter::display {} display
-  interp alias slave ::jupyter::html {} display text/html
   interp alias slave ::jupyter::updatedisplay {} updatedisplay
+  slave eval {
+    namespace eval jupyter {
+      proc html {body} {
+        return [display text/html $body]
+      }
+      proc updatehtml {id body} {
+        return [updatedisplay $id text/html $body]
+      }
+      namespace export display updatedisplay html updatehtml
+    }
+  }
 
   set code [json get [dict get $jmsg content] code]
   set response [jmsg::newiopub $kernel_id $ph execute_input]
@@ -111,12 +121,10 @@ proc execute_request {jmsg} {
   }
   respond $response
 
-
-
   if {[catch {slave eval $code} result]} {
     puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
   } else {
-    puts stdout $result
+    if {$result ne {}} {puts stdout $result}
   }
   dict with jmsg {
     set parent $header
