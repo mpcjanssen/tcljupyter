@@ -34,7 +34,7 @@ proc respond {jmsg} {
    
     set zmsg [jmsg::znew $jmsg]
     # puts "$port [string repeat > 20]"
-    # puts "RESPOND: [join $zmsg \n]\n\n"
+    puts "RESPOND: [string range [join $zmsg \n] 0 1200]\n"
     foreach msg [lrange $zmsg 0 end-1] {
 	$ports($port) sendmore $msg
     }
@@ -48,8 +48,8 @@ proc on_recv {port} {
     variable ports
     variable kernel_id
     set zmsg [zmsg recv $ports($port)]
-    # puts "\n\n\n\n$port [string repeat < 20]"
-    # puts "REQ: [join $zmsg \n]\n"
+    puts "\n\n\n\n$port [string repeat < 20]"
+    puts "REQ: [string range [join $zmsg \n] 0 1200]\n"
     set jmsg [jmsg::new [list $port $kernel_id {*}$zmsg]]
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
@@ -60,8 +60,8 @@ proc on_recv {port} {
 	handle_info_request $jmsg
 	return
     }
-    puts ">>>>>>>>>>>>>>>>>>>>"
-    puts $jmsg
+#    puts ">>>>>>>>>>>>>>>>>>>>"
+#    puts $jmsg
     set to  $::sessions($session)
     thread::send -async $to [list recv $jmsg]
 }
