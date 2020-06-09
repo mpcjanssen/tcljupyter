@@ -110,10 +110,8 @@ proc execute_request {jmsg} {
 
 
 proc respond {jmsg} {
-    variable ::pipe
-    set l [string length $jmsg]
-    puts -nonewline $pipe $l:$jmsg
-    flush $pipe
+    variable ::master
+    thread::send -async $master [list respond $jmsg]
 }
 
 proc handle {msg_type jmsg} {
@@ -125,8 +123,7 @@ proc handle {msg_type jmsg} {
     respond [jmsg::status $kernel_id $parent idle]
 }
 
-proc recv {chan} {
-    set jmsg [read $chan]
+proc recv {jmsg} {
     set kernel_id [dict get $jmsg kernel_id]
     set parent [dict get $jmsg header]
     set msg_type [json get $parent msg_type]
@@ -138,16 +135,11 @@ proc recv {chan} {
     }
 }
 
-proc listen {from to} {
-    set ::pipe $to
-    fconfigure $from -blocking 0
-    fconfigure $from -translation binary
-    fileevent $from readable [list recv $from]
+proc listen {} {
     # redirect stdout and stderr
     chan push stdout {writechan stdout} 
     chan push stderr {writechan stderr} 
     interp create slave
-    vwait forever
 }
 
 

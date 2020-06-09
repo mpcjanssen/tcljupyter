@@ -60,38 +60,21 @@ proc on_recv {port} {
 	handle_info_request $jmsg
 	return
     }
-    set tosocket  $::sessions($session)
-    puts -nonewline $tosocket  $jmsg
-    flush $tosocket    
+    puts ">>>>>>>>>>>>>>>>>>>>"
+    puts $jmsg
+    set to  $::sessions($session)
+    thread::send -async $to [list recv $jmsg]
 }
 
-proc incoming {chan} {
-    set length {}
-    fconfigure $chan -blocking 1
-    while 1 {
-	set c [read $chan 1]
-	if {$c eq ":"} break
-	append length $c
-    }
-    # puts "Incoming message from session thread: length $length]"
-    set jmsg [read $chan $length]
-    # puts |||||||$jmsg\n
-    if {[catch {respond $jmsg} err]} { puts !!!!!!!!!!!!!!!!!!!$err }
-}
 
 proc startsession {session} {
     set t [thread::create]
-    lassign [chan pipe] fromSession toMaster
-    lassign [chan pipe] fromMaster toSession
-    fileevent $fromSession readable [list incoming $fromSession]
-    fconfigure $fromSession -blocking 0
-    set ::sessions($session) $toSession
+    set ::sessions($session) $t
+    thread::send $t [list set master [thread::id]]
     thread::send $t [list set auto_path $::auto_path]
     thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
     thread::send $t {package require sessionclient}
-    thread::transfer $t $fromMaster
-    thread::transfer $t $toMaster
-    thread::send -async $t [list listen $fromMaster $toMaster]
+    thread::send -async $t listen
 }
 
 proc starthb {} {
