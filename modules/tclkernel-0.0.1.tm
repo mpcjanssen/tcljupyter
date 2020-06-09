@@ -113,22 +113,28 @@ proc address {port} {
 
 
 proc handle_control_request {jmsg} {
+  set shutdown 0
   set kernel_id [dict get $jmsg kernel_id]
-  set parent [dict get $jmsg header]
-  set msg_type [json get $parent msg_type]
-  respond [jmsg::status $kernel_id $parent busy]
-  dict with jmsg {
-    switch -exact $msg_type {
-      shutdown_request {
-        after 0 {
-          exit
-        }
-        json set header msg_type shutdown_reply
-      }
+  set ph [dict get $jmsg header]
+  set msg_type [json get $ph msg_type]
+  set reply_type {}
+  respond [jmsg::status $kernel_id $ph busy]
+  switch -exact $msg_type {
+    shutdown_request {
+      set shutdown 1
+      set reply_type shutdown_reply
     }
   }
+  dict with jmsg {
+    set parent $ph
+    json set header msg_type $reply_type
+  }
   respond $jmsg
-  respond [jmsg::status $kernel_id $parent idle]
+  respond [jmsg::status $kernel_id $ph idle]
+  if {$shutdown} {
+    puts "Shutting down kernel"
+    after 0 exit
+  }
 }
 
 proc handle_info_request {jmsg} {
