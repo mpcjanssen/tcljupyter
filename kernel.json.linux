@@ -1,1 +1,1 @@
-{"argv":["tclsh","/home/user/.local/share/jupyter/kernels/tcl_kernel-0.0.1/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}
+{"argv":["/usr/local/bin/tclsh8.6","/home/mpcjanssen/.local/share/jupyter/kernels/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}
