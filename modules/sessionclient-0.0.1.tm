@@ -39,7 +39,7 @@ proc stream {name text} {
 proc display_data {mimetype body id} {
   if {$mimetype ne "application/json"} {
     set content [json template {
-      {
+      { 
         "data":{"~S:mimetype": "~S:body"},
         "metadata":{},
         "transient":{
@@ -87,6 +87,27 @@ proc updatedisplay {id mimetype body} {
   respond $response
 }
 
+proc bgerror {jmsg kernel_id ph tid errorInfo} {
+  variable exec_counter
+  puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
+   dict with jmsg {
+    set parent $ph
+    set username [json get $ph username]
+    set header  [jmsg::newheader $kernel_id $username execute_reply]
+    set content [json template {
+      {
+        "status":"ok",
+        "execution_count":"~N:exec_counter",
+        "user_expressions": {}
+
+      }
+    }]	 
+  }
+  respond $jmsg
+  respond [jmsg::status $kernel_id $ph idle]  
+  thread::errorproc {}
+}
+
 proc execute_request {jmsg} {
   variable ph
   variable kernel_id
@@ -94,20 +115,8 @@ proc execute_request {jmsg} {
   incr exec_counter
   set ph [dict get $jmsg header]
   set kernel_id [dict get $jmsg kernel_id]
-
-  interp alias slave ::jupyter::display {} display
-  interp alias slave ::jupyter::updatedisplay {} updatedisplay
-  slave eval {
-    namespace eval jupyter {
-      proc html {body} {
-        return [display text/html $body]
-      }
-      proc updatehtml {id body} {
-        return [updatedisplay $id text/html $body]
-      }
-      namespace export display updatedisplay html updatehtml
-    }
-  }
+  thread::errorproc errorproc
+  interp alias {} errorproc {} bgerror $jmsg $kernel_id $ph
 
   set code [json get [dict get $jmsg content] code]
   set response [jmsg::newiopub $kernel_id $ph execute_input]
@@ -121,13 +130,14 @@ proc execute_request {jmsg} {
   }
   respond $response
 
+  respond [jmsg::status $kernel_id $ph busy]
   if {[catch {slave eval $code} result]} {
     puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
   } else {
     if {$result ne {}} {puts stdout $result}
   }
   dict with jmsg {
-    set parent $header
+    set parent $ph
     set username [json get $header username]
     set header  [jmsg::newheader $kernel_id $username execute_reply]
     set content [json template {
@@ -140,6 +150,7 @@ proc execute_request {jmsg} {
     }]	 
   }
   respond $jmsg
+  respond [jmsg::status $kernel_id $ph idle]
 }
 
 
@@ -148,32 +159,24 @@ proc respond {jmsg} {
   thread::send -async $master [list respond $jmsg]
 }
 
-proc handle {msg_type jmsg} {
-  set kernel_id [dict get $jmsg kernel_id]
-  set parent [dict get $jmsg header]
-
-  respond [jmsg::status $kernel_id $parent busy]
-  $msg_type $jmsg
-  respond [jmsg::status $kernel_id $parent idle]
-}
-
-proc recv {jmsg} {
-  set kernel_id [dict get $jmsg kernel_id]
-  set parent [dict get $jmsg header]
-  set msg_type [json get $parent msg_type]
-  if {[info commands $msg_type] ne {}} {
-  # puts "Handling $msg_type"
-    handle $msg_type $jmsg
-  } else {
-  # puts "Not handling $msg_type"
+proc listen {} {
+# redirect stdout and stderr
+  chan push stdout {writechan stdout} 
+  chan push stderr {writechan stderr} 
+  interp create slave
+  interp alias slave ::jupyter::display {} display
+  interp alias slave ::jupyter::updatedisplay {} updatedisplay
+  slave eval {
+    namespace eval jupyter {
+      proc html {body} {
+        return [display text/html $body]
+      }
+      proc updatehtml {id body} {
+        return [updatedisplay $id text/html $body]
+      }
+      namespace export display updatedisplay html updatehtml
     }
   }
-
-  proc listen {} {
-  # redirect stdout and stderr
-  chan push stdout {writechan stdout} 
-    chan push stderr {writechan stderr} 
-    interp create slave
-  }
+}
 
 

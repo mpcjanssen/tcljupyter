@@ -33,8 +33,8 @@ proc respond {jmsg} {
   }
 
   set zmsg [jmsg::znew $jmsg]
-  # puts "$port [string repeat > 20]"
-  puts "RESPOND: [string range [join $zmsg \n] 0 1200]\n"
+  puts "$port [string repeat > 20]"
+  puts "RESPOND:\n[string range [join $zmsg \n] 0 1200]\n"
   foreach msg [lrange $zmsg 0 end-1] {
     $ports($port) sendmore $msg
   }
@@ -49,13 +49,10 @@ proc on_recv {port} {
   variable kernel_id
   set zmsg [zmsg recv $ports($port)]
   puts "\n\n\n\n$port [string repeat < 20]"
-  puts "REQ: [string range [join $zmsg \n] 0 1200]\n"
+  puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
   set jmsg [jmsg::new [list $port $kernel_id {*}$zmsg]]
   set session [jmsg::session $jmsg]
   set type [jmsg::type $jmsg]
-  if {![info exists ::sessions($session)]} {
-    startsession $session
-  }
   if {$type eq "kernel_info_request"} {
     handle_info_request $jmsg
     return
@@ -63,16 +60,21 @@ proc on_recv {port} {
   if {$port eq "control"} {
     handle_control_request $jmsg
     return
+  } 
+  if {![info exists ::sessions($session)]} {
+    startsession $session
   }
+
   #    puts ">>>>>>>>>>>>>>>>>>>>"
   #    puts $jmsg
   set to  $::sessions($session)
-  thread::send -async $to [list recv $jmsg]
+  thread::send -async $to [list $type $jmsg]
 }
 
 
 proc startsession {session} {
   set t [thread::create]
+  puts "Created thread $t"
   set ::sessions($session) $t
   thread::send $t [list set master [thread::id]]
   thread::send $t [list set auto_path $::auto_path]
@@ -116,9 +118,9 @@ proc handle_control_request {jmsg} {
   set shutdown 0
   set kernel_id [dict get $jmsg kernel_id]
   set ph [dict get $jmsg header]
+  set ps [jmsg::session $jmsg]
   set msg_type [json get $ph msg_type]
   set reply_type {}
-  respond [jmsg::status $kernel_id $ph busy]
   switch -exact $msg_type {
     shutdown_request {
       set shutdown 1
@@ -126,9 +128,10 @@ proc handle_control_request {jmsg} {
     }
     interrupt_request {
       set reply_type interrupt_reply
-      set session [json get $ph session]
-      set to  $::sessions($session)
-      thread::cancel -unwind $to
+      foreach {session tid} [array get ::sessions] {
+        puts "Interrupting session $session"
+        thread::cancel $tid "<<interrupted>>"
+      }
 
     }
   }
@@ -137,7 +140,6 @@ proc handle_control_request {jmsg} {
     json set header msg_type $reply_type
   }
   respond $jmsg
-  respond [jmsg::status $kernel_id $ph idle]
   if {$shutdown} {
     puts "Shutting down kernel"
     after 0 exit
