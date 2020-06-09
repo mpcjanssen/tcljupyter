@@ -85,7 +85,7 @@ proc startsession {session} {
   thread::send $t [list set master [thread::id]]
   thread::send $t [list set auto_path $::auto_path]
   thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
-  thread::send -async $t {
+  thread::send $t {
     package require sessionclient
     chan push stdout {writechan stdout} 
     chan push stderr {writechan stderr} 
@@ -103,8 +103,8 @@ proc startsession {session} {
         namespace export display updatedisplay html updatehtml
       }
     }
-    thread::wait 
   }
+  thread::send -async $t thread::wait	
 }
 
 proc starthb {} {
