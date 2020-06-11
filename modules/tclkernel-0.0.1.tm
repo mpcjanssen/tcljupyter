@@ -62,6 +62,7 @@ proc on_recv {port} {
         return
     }
     if {$type eq "comm_info_request"} {
+        # Unsupported
         return
     }
     if {$port eq "control"} {
@@ -121,9 +122,8 @@ proc starthb {} {
     thread::send $t -async {zmq context context}
     thread::send $t -async [list zmq socket zsocket context REP]
     thread::send $t -async [list zsocket bind [address hb]]
-    thread::send $t -async {while {1} {
-        zmq device FORWARDER zsocket zsocket
-    }}
+    thread::send $t -async [list thread::wait]
+    thread::send $t -async [list zmq device FORWARDER zsocket zsocket]
 }
 
 proc listen {port type} {
