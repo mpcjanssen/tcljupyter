@@ -77,9 +77,13 @@ proc on_recv {port} {
   set to  $::sessions($session)
 
   # wrap command in a catch to capture and handle interrupt messages
-  set cmd "if {\[ [list catch [list $type $jmsg] result] \]} {[list bgerror $jmsg $to \$::errorInfo]}"
-  # puts zzzz$cmd
-  thread::send -async $to $cmd
+  thread::send -async $to [list set cmd [list $type $jmsg $to]]
+  thread::send -async $to {
+    lassign $cmd type jmsg to
+    if {[catch {$type $jmsg} result]} {
+      bgerror $jmsg $to $::errorInfo
+    }
+  }
 }
 
 proc startsession {session} {
