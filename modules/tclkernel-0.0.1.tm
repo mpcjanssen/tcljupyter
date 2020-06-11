@@ -74,7 +74,9 @@ proc on_recv {port} {
   #    puts ">>>>>>>>>>>>>>>>>>>>"
   #    puts $jmsg
   set to  $::sessions($session)
-  thread::send -async $to [list $type $jmsg]
+  set cmd "if {\[ [list catch [list $type $jmsg] result] \]} {[list bgerror $jmsg $kernel_id $to \$::errorInfo]}"
+  puts zzzz$cmd
+  thread::send -async $to $cmd
 }
 
 
@@ -104,7 +106,6 @@ proc startsession {session} {
       }
     }
   }
-  thread::send -async $t thread::wait	
 }
 
 proc starthb {} {
@@ -154,7 +155,7 @@ proc handle_control_request {jmsg} {
       set reply_type interrupt_reply
       foreach {session tid} [array get ::sessions] {
         puts "Interrupting session $session"
-        thread::cancel $tid "<<interrupted>>"
+        thread::cancel  $tid
       }
 
     }
@@ -196,3 +197,5 @@ set kernel_info { {
     "file_extension": ".tcl"
   }
 }}
+
+

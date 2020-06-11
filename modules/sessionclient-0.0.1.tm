@@ -87,8 +87,9 @@ proc updatedisplay {id mimetype body} {
   respond $response
 }
 
-proc bgerror {jmsg kernel_id ph tid errorInfo} {
+proc bgerror {jmsg kernel_id tid errorInfo} {
   variable exec_counter
+  set ph [dict get $jmsg header]
   puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
    dict with jmsg {
     set parent $ph
