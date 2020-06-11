@@ -75,14 +75,14 @@ proc on_recv {port} {
   #    puts $jmsg
   set to  $::sessions($session)
   set cmd "if {\[ [list catch [list $type $jmsg] result] \]} {[list bgerror $jmsg $kernel_id $to \$::errorInfo]}"
-  puts zzzz$cmd
+  # puts zzzz$cmd
   thread::send -async $to $cmd
 }
 
 
 proc startsession {session} {
   set t [thread::create]
-  puts "Created thread $t"
+  puts "Created thread $t for $session"
   set ::sessions($session) $t
   thread::send $t [list set master [thread::id]]
   thread::send $t [list set auto_path $::auto_path]
