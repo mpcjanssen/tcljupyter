@@ -129,8 +129,6 @@ proc execute_request {jmsg} {
   respond $response
 
   respond [jmsg::status $kernel_id $ph busy]
-  interp alias {} errorproc {} bgerror $jmsg $kernel_id $ph
-  thread::errorproc errorproc
   if {[catch {slave eval $code} result]} {
     puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
   } else {
