@@ -6,6 +6,7 @@ set conn {}
 set kernel_id [jmsg::newid]
 variable ports
 variable sessions
+variable t
 
 proc connect {connection_file} {
     variable conn
@@ -27,6 +28,7 @@ proc connect {connection_file} {
     # It seems we cannot do correct sync because messaging protocol
     # doesn't support this. Value of 500 ms was chosen experimentally.
     after 500
+    start [pid]
 }
 
 proc respond {jmsg} {
@@ -50,6 +52,8 @@ proc respond {jmsg} {
 
 proc on_recv {port} {
     variable ports
+    variable t
+    set to $t
     set zmsg [zmsg recv $ports($port)]
     # puts "\n\n\n\n$port [string repeat < 20]"
     # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
@@ -68,13 +72,9 @@ proc on_recv {port} {
         handle_control_request $jmsg
         return
     } 
-    if {![info exists ::sessions($session)]} {
-        startsession $session
-    }
 
     #    puts ">>>>>>>>>>>>>>>>>>>>"
     #    puts $jmsg
-    set to  $::sessions($session)
 
     # wrap command in a catch to capture and handle interrupt messages
     thread::send -async $to [list set cmd [list $type $jmsg $to]]
@@ -86,10 +86,10 @@ proc on_recv {port} {
     }
 }
 
-proc startsession {session} {
+proc start {pid} {
+    variable t
     set t [thread::create]
-    puts "Created thread $t for $session"
-    set ::sessions($session) $t
+    puts "Created thread $t for $pid"
     thread::send $t [list set master [thread::id]]
     thread::send $t [list set auto_path $::auto_path]
     thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
@@ -145,6 +145,7 @@ proc address {port} {
 
 proc handle_control_request {jmsg} {
     set shutdown 0
+    variable t
     set ph [dict get $jmsg header]
     set ps [jmsg::session $jmsg]
     set msg_type [json get $ph msg_type]
@@ -156,11 +157,8 @@ proc handle_control_request {jmsg} {
         }
         interrupt_request {
             set reply_type interrupt_reply
-            foreach {session tid} [array get ::sessions] {
-                puts "Interrupting session $session"
-                thread::cancel  $tid
-            }
-
+            puts "Interrupting kernel [pid]"
+            thread::cancel  $t
         }
     }
     dict with jmsg {
