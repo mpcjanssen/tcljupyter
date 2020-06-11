@@ -13,8 +13,7 @@ proc writechan {name cmd args} {
         initialize { return {initialize finalize write}}
         write {
             lassign $args handle buffer
-            set text [encoding convertfrom [fconfigure stdout -encoding] $buffer]
-            stream $name $text
+            stream $name [encoding convertfrom [fconfigure $name -encoding] $buffer]
             return ""
         }
     }

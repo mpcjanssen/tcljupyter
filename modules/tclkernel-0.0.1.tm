@@ -3,18 +3,17 @@ package require Thread
 package require jmsg
 
 set conn {}
-set key {}
 set kernel_id [jmsg::newid]
 variable ports
 variable sessions
 
 proc connect {connection_file} {
     variable conn
-    variable key
     variable ports
     set f [open $connection_file]
     set conn [read $f]
     set key [json get $conn key]
+    interp alias {} hmac {}  sha2::hmac -hex -key $key 
     zmq context context
     listen shell ROUTER
     listen control ROUTER
@@ -37,7 +36,7 @@ proc respond {jmsg} {
     set port [dict get $jmsg port]
     dict with jmsg {
         json set header session $kernel_id
-        set hmac [sha2::hmac -hex -key $key  "$header$parent$metadata$content"] 
+        set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]] 
     }
 
     set zmsg [jmsg::znew $jmsg]
@@ -143,7 +142,6 @@ proc address {port} {
     append address [json get $conn ${port}_port]
     return $address
 }
-
 
 proc handle_control_request {jmsg} {
     set shutdown 0

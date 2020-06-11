@@ -27,9 +27,14 @@ namespace eval jmsg {
         dict set result delimiter $delimiter
         dict set result hmac $hmac
         dict set result header $header
-        dict set result parent $parent
+        dict set result parent $parent 
         dict set result metadata $metadata
         dict set result content $content
+        set calc_hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]]
+        if {$calc_hmac ne $hmac} {
+            puts "ERROR: HMAC mismatch $calc_hmac : $hmac"
+            exit -1
+        }
         return $result
     }
     proc znew {jmsg} {
