@@ -21,15 +21,13 @@ The tcl used to run the `init.tcl` script should have the following available:
 ## Supported
 
 Most web client commands are supported. Only thing missing is reading from stdin with for example `gets`. 
-Also interrupting the kernel will display the interruption message under the currently active cell (not the interrupted one).
-
 
 ### Commands
 
    * `jupyter::display mimetype body`: Display body in the cell. Returns the display id for use in `updatedisplay`.
    * `jupyter::html body`: Display body as html in the cell. Returns the display id for use in `updatedisplay`. 
    * `jupyter::updatedisplay id mimetype body`: Updates the display with id `id` with then new body.
-   * `jupyter::updatehtml id body`: Updates the html display with id `id` with then new body.
+   * `jupyter::updatehtml id body`: Updates the html display with id `id` with the new body.
 
 
 If a cell ends with `;` the last result is not displayed.
