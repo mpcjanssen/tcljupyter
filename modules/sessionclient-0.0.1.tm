@@ -23,8 +23,7 @@ proc writechan {name cmd args} {
 
 proc stream {name text} {
   variable ph
-  variable kernel_id    
-  set response [jmsg::newiopub $kernel_id $ph stream]
+  set response [jmsg::newiopub $ph stream]
   dict with response {
     set content [json template {
       {
@@ -68,8 +67,7 @@ proc display {mimetype body} {
   incr display_id
   set id display-id-$display_id
   variable ph
-  variable kernel_id
-  set response [jmsg::newiopub $kernel_id $ph display_data]
+  set response [jmsg::newiopub $ph display_data]
   dict with response {
     set content [display_data $mimetype $body $id]
   }
@@ -79,22 +77,21 @@ proc display {mimetype body} {
 
 proc updatedisplay {id mimetype body} {
   variable ph
-  variable kernel_id
-  set response [jmsg::newiopub $kernel_id $ph update_display_data]
+  set response [jmsg::newiopub $ph update_display_data]
   dict with response {
     set content [display_data $mimetype $body $id]
   }
   respond $response
 }
 
-proc bgerror {jmsg kernel_id tid errorInfo} {
+proc bgerror {jmsg tid errorInfo} {
   variable exec_counter
   set ph [dict get $jmsg header]
   puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
    dict with jmsg {
     set parent $ph
     set username [json get $ph username]
-    set header  [jmsg::newheader $kernel_id $username execute_reply]
+    set header  [jmsg::newheader $username execute_reply]
     set content [json template {
       {
         "status":"ok",
@@ -105,19 +102,21 @@ proc bgerror {jmsg kernel_id tid errorInfo} {
     }]	 
   }
   respond $jmsg
-  respond [jmsg::status $kernel_id $ph idle]  
+  respond [jmsg::status $ph idle]  
+}
+
+proc complete_request {jmsg} {
+  # not supported
 }
 
 proc execute_request {jmsg} {
   variable ph
-  variable kernel_id
   variable exec_counter
   incr exec_counter
   set ph [dict get $jmsg header]
-  set kernel_id [dict get $jmsg kernel_id]
 
   set code [json get [dict get $jmsg content] code]
-  set response [jmsg::newiopub $kernel_id $ph execute_input]
+  set response [jmsg::newiopub $ph execute_input]
   dict with response {
     set content [json template {
       {
@@ -128,7 +127,7 @@ proc execute_request {jmsg} {
   }
   respond $response
 
-  respond [jmsg::status $kernel_id $ph busy]
+  respond [jmsg::status $ph busy]
   if {[catch {slave eval $code} result]} {
     puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
   } else {
@@ -137,7 +136,7 @@ proc execute_request {jmsg} {
   dict with jmsg {
     set parent $ph
     set username [json get $header username]
-    set header  [jmsg::newheader $kernel_id $username execute_reply]
+    set header  [jmsg::newheader $username execute_reply]
     set content [json template {
       {
         "status":"ok",
@@ -148,7 +147,7 @@ proc execute_request {jmsg} {
     }]	 
   }
   respond $jmsg
-  respond [jmsg::status $kernel_id $ph idle]
+  respond [jmsg::status $ph idle]
 }
 
 

@@ -4,14 +4,20 @@ package require uuid
 namespace import ::rl_json::*
 namespace eval jmsg {
 
-  proc newheader {kernelid username msg_type} {
+  proc updatekernel_id {jmsg id} {
+    dict with jmsg {
+      json set header session $id
+    }
+    return $jmsg
+  }
+
+  proc newheader {username msg_type} {
     set msg_id [newid]
     set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
     json template {
       {"msg_id":"~S:msg_id",
         "msg_type":"~S:msg_type",
         "username":"~S:username",
-        "session":"~S:kernelid",
         "date":"~S:date",
         "version":"5.3"
       }
@@ -23,8 +29,7 @@ namespace eval jmsg {
   }
 
   proc new {zmsg} {
-    set buffers [lassign $zmsg port kernel_id uuid delimiter hmac header parent metadata content]
-    dict set result kernel_id $kernel_id
+    set buffers [lassign $zmsg port uuid delimiter hmac header parent metadata content]
     dict set result port $port
     dict set result uuid $uuid
     dict set result delimiter $delimiter
@@ -59,16 +64,16 @@ namespace eval jmsg {
     json get [dict get $msg header] msg_type		
   }
 
-  proc newiopub {kernel_id parent msg_type} {
+  proc newiopub {parent msg_type} {
     set username [json get $parent username]
-    set header [jmsg::newheader $kernel_id $username $msg_type]
+    set header [jmsg::newheader $username $msg_type]
     set content [json template {{}}]
     set jmsg [list port iopub uuid $msg_type delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
     return $jmsg 
   }
 
-  proc status {kernel_id parent state} {
-    set jmsg [newiopub $kernel_id $parent status]
+  proc status {parent state} {
+    set jmsg [newiopub $parent status]
     dict with jmsg {
       set content [json template {{"execution_state" : "~S:state"}}]   
     }

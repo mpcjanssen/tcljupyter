@@ -33,8 +33,10 @@ proc connect {connection_file} {
 proc respond {jmsg} {
   variable key
   variable ports
+  variable kernel_id
   set port [dict get $jmsg port]
   dict with jmsg {
+    json set header session $kernel_id
     set hmac [sha2::hmac -hex -key $key  "$header$parent$metadata$content"] 
   }
 
@@ -49,11 +51,10 @@ proc respond {jmsg} {
 
 proc on_recv {port} {
   variable ports
-  variable kernel_id
   set zmsg [zmsg recv $ports($port)]
   # puts "\n\n\n\n$port [string repeat < 20]"
   # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
-  set jmsg [jmsg::new [list $port $kernel_id {*}$zmsg]]
+  set jmsg [jmsg::new [list $port {*}$zmsg]]
   set session [jmsg::session $jmsg]
   set type [jmsg::type $jmsg]
   if {$type eq "kernel_info_request"} {
@@ -74,11 +75,12 @@ proc on_recv {port} {
   #    puts ">>>>>>>>>>>>>>>>>>>>"
   #    puts $jmsg
   set to  $::sessions($session)
-  set cmd "if {\[ [list catch [list $type $jmsg] result] \]} {[list bgerror $jmsg $kernel_id $to \$::errorInfo]}"
+
+  # wrap command in a catch to capture and handle interrupt messages
+  set cmd "if {\[ [list catch [list $type $jmsg] result] \]} {[list bgerror $jmsg $to \$::errorInfo]}"
   # puts zzzz$cmd
   thread::send -async $to $cmd
 }
-
 
 proc startsession {session} {
   set t [thread::create]
@@ -141,7 +143,6 @@ proc address {port} {
 
 proc handle_control_request {jmsg} {
   set shutdown 0
-  set kernel_id [dict get $jmsg kernel_id]
   set ph [dict get $jmsg header]
   set ps [jmsg::session $jmsg]
   set msg_type [json get $ph msg_type]
@@ -172,18 +173,17 @@ proc handle_control_request {jmsg} {
 }
 
 proc handle_info_request {jmsg} {
-  set kernel_id [dict get $jmsg kernel_id]
   set parent [dict get $jmsg header]
-  respond [jmsg::status $kernel_id $parent busy]
+  respond [jmsg::status $parent busy]
   dict with jmsg {
     set parent $header
     set username [json get $header username]
-    set header  [jmsg::newheader $kernel_id $username kernel_info_reply] 
+    set header  [jmsg::newheader $username kernel_info_reply] 
     set version [info patchlevel]
     set content [json template $::kernel_info]
   }
   respond $jmsg
-  respond [jmsg::status $kernel_id $parent idle]
+  respond [jmsg::status $parent idle]
 }
 set kernel_info { {
   "status" : "ok",
