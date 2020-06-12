@@ -22,12 +22,6 @@ proc connect {connection_file} {
     starthb
     set ports(iopub) [zmq socket context PUB]
     $ports(iopub) bind [address iopub]
-    # Workaround to prevent losing few first messages on kernel startup
-    # For more information on losing messages see this scheme:
-    # http://zguide.zeromq.org/page:all#Missing-Message-Problem-Solver
-    # It seems we cannot do correct sync because messaging protocol
-    # doesn't support this. Value of 500 ms was chosen experimentally.
-    after 500
     start [pid]
 }
 
@@ -73,15 +67,16 @@ proc on_recv {port} {
         return
     } 
 
-    #    puts ">>>>>>>>>>>>>>>>>>>>"
-    #    puts $jmsg
+    # puts ">>>>>>>>>>>>>>>>>>>>"
+    # puts $jmsg
 
     # wrap command in a catch to capture and handle interrupt messages
     thread::send -async $to [list set cmd [list $type $jmsg $to]]
     thread::send -async $to {
         lassign $cmd type jmsg to
         if {[catch {$type $jmsg} result]} {
-            bgerror $jmsg $to $::errorInfo
+            bgerror $jmsg $::errorInfo
+            # puts $::errorInfo
         }
     }
 }
@@ -100,8 +95,12 @@ proc start {pid} {
         interp create slave
         interp alias slave ::jupyter::display {} display
         interp alias slave ::jupyter::updatedisplay {} updatedisplay
+        interp alias slave ::jupyter::complete slave ::jupyter::defaultcomplete
         slave eval {
             namespace eval jupyter {
+                proc defaultcomplete {code pos} {
+                    return [list {} $pos]
+                }
                 proc html {body} {
                     return [display text/html $body]
                 }
@@ -167,7 +166,7 @@ proc handle_control_request {jmsg} {
     }
     respond $jmsg
     if {$shutdown} {
-        puts "Shutting down kernel"
+        puts "Shutting down kernel [pid]"
         after 0 exit
     }
 }

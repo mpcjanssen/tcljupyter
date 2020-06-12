@@ -83,7 +83,7 @@ proc updatedisplay {id mimetype body} {
     respond $response
 }
 
-proc bgerror {jmsg tid errorInfo} {
+proc bgerror {jmsg errorInfo} {
     variable exec_counter
     set ph [dict get $jmsg header]
     puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
@@ -105,7 +105,39 @@ proc bgerror {jmsg tid errorInfo} {
 }
 
 proc complete_request {jmsg} {
-    # not supported
+    variable ph
+    set ph [dict get $jmsg header]
+    respond [jmsg::status $ph busy]
+     
+    set cursor_pos [json get [dict get $jmsg content] cursor_pos]
+    set code [json get [dict get $jmsg content] code]
+    set cursor_start $cursor_pos
+    set cursor_end $cursor_pos
+
+    if {[catch {lassign [slave eval [list ::jupyter::complete $code $cursor_pos]] matches cursor_start} err]} {
+        set matches [json array [list string $err]]
+
+    } else {
+        set matches [lmap x $matches {list string $x}]
+        set matches [json array {*}$matches]
+    }
+    dict with jmsg {
+        set parent $ph
+        set username [json get $header username]
+        set header  [jmsg::newheader $username complete_reply]
+        set content [json template {
+            {
+                "status":"ok",
+                "matches":"~J:matches",
+                "cursor_start":"~N:cursor_start",
+                "cursor_end":"~N:cursor_end"
+
+
+            }
+        }]       
+    }
+    respond $jmsg
+    respond [jmsg::status $ph idle]
 }
 
 proc execute_request {jmsg} {
