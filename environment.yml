@@ -1,0 +1,11 @@
+name: tcljupyter
+channels:
+  - conda-forge
+  - intel
+dependencies:
+# host Dependencies
+  - tcl
+  - gcc
+  - make
+  - zeromq
+  - git

@@ -1,0 +1,16 @@
+
+echo $CONDA_DIR
+export PREFIX=${CONDA_DIR}/envs/tcljupyter
+
+cd ${PREFIX}
+mkdir -p src
+cd src
+
+git clone https://github.com/tcltk/tcllib
+cd tcllib
+./configure
+make && make install
+cd ..
+git clone https://github.com/andreas-kupries/critcl
+cd critcl
+tclsh build.tcl install
