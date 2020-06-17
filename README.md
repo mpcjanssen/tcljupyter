@@ -9,6 +9,12 @@ Then change the paths in `kernel.json` to match your machine.
 
 Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
 
+### Binder
+
+If you want to try it out without installation you can use the Binder version in the cloud.
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/master?filepath=examples%2Fexample.ipynb)
+
 ### Dependencies
 
 The tcl used to run the `init.tcl` script should have the following available:
