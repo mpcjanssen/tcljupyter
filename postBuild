@@ -5,10 +5,11 @@ export PREFIX=${CONDA_DIR}/envs/notebook
 cd ${PREFIX}
 mkdir -p src
 cd src
+export TCLLIBPATH=$PREFIX
 
 git clone https://github.com/tcltk/tcllib
 cd tcllib
-./configure
+./configure --prefix=$PREFIX
 make && make install
 cd ..
 git clone https://github.com/andreas-kupries/critcl
