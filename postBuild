@@ -1,4 +1,4 @@
-export PWD=`pwd`
+export REPO=`pwd`
 echo `pwd`
 echo $CONDA_DIR
 export PREFIX=${CONDA_DIR}/envs/notebook
@@ -21,5 +21,5 @@ git clone https://github.com/jdc8/tclzmq
 cd tclzmq
 tclsh build.tcl install $PREFIX -zmq ${PREFIX}
 cd ..
-tclsh $PWD/testdeps.tcl
+tclsh $REPO/testdeps.tcl
 
