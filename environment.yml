@@ -8,4 +8,4 @@ dependencies:
   - make
   - zeromq
   - git
-  - uuid
+  - libuuid
