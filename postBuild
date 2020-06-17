@@ -8,6 +8,10 @@ mkdir -p src
 cd src
 export TCLLIBPATH=$PREFIX
 
+git clone https://github.com/RubyLane/rl_json.git
+cd rl_json
+./configure --prefix=$PREFIX
+make && make install
 git clone https://github.com/tcltk/tcllib
 cd tcllib
 ./configure --prefix=$PREFIX
