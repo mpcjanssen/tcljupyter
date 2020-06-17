@@ -34,3 +34,4 @@ cp -R $REPO/modules $KERNELPATH/
 
 tclsh $REPO/testdeps.tcl
 echo `ls -R  $PREFIX/share/jupyter/kernels/`
+exit 1
