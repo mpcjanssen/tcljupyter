@@ -1,6 +1,6 @@
 
 echo $CONDA_DIR
-export PREFIX=${CONDA_DIR}/envs/tcljupyter
+export PREFIX=${CONDA_DIR}/envs/notebook
 
 cd ${PREFIX}
 mkdir -p src
