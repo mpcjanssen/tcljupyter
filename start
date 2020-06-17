@@ -2,6 +2,6 @@
 
 export PREFIX=${CONDA_DIR}/envs/notebook
 export TCLLIBPATH=$PREFIX
-cd examples
+cd notebooks
 
 exec "$@"
