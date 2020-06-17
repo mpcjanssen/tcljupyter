@@ -26,4 +26,10 @@ cd tclzmq
 tclsh build.tcl install $PREFIX -zmq ${PREFIX}
 cd ..
 tclsh $REPO/testdeps.tcl
+export KERNELPATH=$PREFIX/share/jupyter/kernels/tcljupyter
+mkdir -p $KERNELPATH
+
+cp $REPO/kernel.json.binder $KERNELPATH/kernel.json
+cp $REPO/init.tcl $KERNELPATH/
+cp -R $REPO/modules $KERNELPATH/
 
