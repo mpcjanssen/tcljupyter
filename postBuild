@@ -32,5 +32,5 @@ cp $REPO/kernel.json.binder $KERNELPATH/kernel.json
 cp $REPO/init.tcl $KERNELPATH/
 cp -R $REPO/modules $KERNELPATH/
 
-tclsh $REPO/testdeps.tcl
+tclsh $KERNELPATH/init.tcl
 echo `ls -R  $PREFIX/share/jupyter/kernels/`

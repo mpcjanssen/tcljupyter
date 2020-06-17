@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export PREFIX=${CONDA_DIR}/envs/notebook
+export TCLLIBPATH=$PREFIX
+
+exec "$@"
