@@ -3,3 +3,5 @@ package require Thread
 package require rl_json
 package require zmq
 puts [glob $env(PREFIX)]/*
+
+exit 1
