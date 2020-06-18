@@ -140,6 +140,31 @@ proc complete_request {jmsg} {
     respond [jmsg::status $ph idle]
 }
 
+proc is_complete_request {jmsg} {
+    variable ph
+    set ph [dict get $jmsg header]
+    respond [jmsg::status $ph busy]
+     
+    set code [json get [dict get $jmsg content] code]
+    append code \n
+    if {[info complete $code]} {
+	set status "complete"
+    } else {
+	set status "incomplete"
+    }
+    # TODO: add indent hint for status "incomplete"
+    dict with jmsg {
+        set parent $ph
+        set username [json get $header username]
+        set header  [jmsg::newheader $username is_complete_reply]
+        set content [json template {
+            {"status":"~S:status"}
+        }]
+    }
+    respond $jmsg
+    respond [jmsg::status $ph idle]
+}
+
 proc execute_request {jmsg} {
     variable ph
     variable exec_counter
