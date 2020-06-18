@@ -187,7 +187,7 @@ proc execute_request {jmsg} {
     if {[catch {slave eval $code} result]} {
         puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
     } else {
-        if {$result ne {} && [string index $code end] ne ";"} {puts stdout $result}
+        if {$result ne {} && [string index [string trim $code] end] ne ";"} {puts stdout $result}
     }
     dict with jmsg {
         set parent $ph
