@@ -2,11 +2,17 @@ package require zmq
 package require Thread
 package require jmsg
 
+
+set script [file normalize [info script]]
+set modfile [file root [file tail $script]]
+lassign [split $modfile -] _ modver
+
 set conn {}
 set kernel_id [jmsg::newid]
-variable ports
-variable sessions
-variable t
+
+array set ports {}
+set sessions {}
+set t {}
 
 proc connect {connection_file} {
     variable conn
@@ -172,6 +178,7 @@ proc handle_control_request {jmsg} {
 }
 
 proc handle_info_request {jmsg} {
+    variable modver
     set parent [dict get $jmsg header]
     respond [jmsg::status $parent busy]
     dict with jmsg {
@@ -179,6 +186,10 @@ proc handle_info_request {jmsg} {
         set username [json get $header username]
         set header  [jmsg::newheader $username kernel_info_reply] 
         set version [info patchlevel]
+	set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
+			$version \
+			$modver \
+			"5.3"]
         set content [json template $::kernel_info]
     }
     respond $jmsg
@@ -188,13 +199,14 @@ set kernel_info { {
     "status" : "ok",
     "protocol_version": "5.3",
     "implementation": "tcljupyter",
-    "implementation_version": "0.0.1",
+    "implementation_version": "~S:modver",
     "language_info": {
         "name": "tcl",
         "version": "~S:version",
         "mimetype": "txt/x-tcl",
         "file_extension": ".tcl"
-    }
+    },
+    "banner" : "~S:banner"
 }}
 
 
