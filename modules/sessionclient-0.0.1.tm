@@ -200,6 +200,8 @@ proc execute_request {jmsg} {
     incr exec_counter
     set ph [dict get $jmsg header]
 
+    respond [jmsg::status $ph busy]
+
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $ph execute_input]
     dict with response {
@@ -212,7 +214,6 @@ proc execute_request {jmsg} {
     }
     respond $response
 
-    respond [jmsg::status $ph busy]
     if {[catch {slave eval $code} result]} {
         puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
     } else {
