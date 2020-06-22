@@ -7,6 +7,8 @@ set ph {}
 set kernel_id {}
 set exec_counter 0
 set display_id 0
+set indent_level 0
+set lastPos 0
 
 proc writechan {name cmd args} {
     switch -exact $cmd {
@@ -142,6 +144,9 @@ proc complete_request {jmsg} {
 
 proc is_complete_request {jmsg} {
     variable ph
+    variable indent_level
+    variable lastPos
+    
     set ph [dict get $jmsg header]
     respond [jmsg::status $ph busy]
      
@@ -149,18 +154,42 @@ proc is_complete_request {jmsg} {
     append code \n
     if {[info complete $code]} {
 	set status "complete"
+	set indent_level 0
+	set lastPos 0
     } else {
 	set status "incomplete"
+	set chunk [string range $code $lastPos end]
+	if {[regexp -lineanchor {\{$} $chunk]} {
+	    # puts incr
+	    incr indent_level
+	} elseif {[regexp -lineanchor {^\s*\}} $chunk]} {
+	    # puts decr
+	    incr indent_level -1
+	}
+	set lastPos [string length $code]
     }
     # TODO: add indent hint for status "incomplete"
-    dict with jmsg {
+    set b [string repeat "  " $indent_level]
+    # puts code=$code
+    # puts b.$indent_level=$b
+    dict with jmsg {   
         set parent $ph
         set username [json get $header username]
         set header  [jmsg::newheader $username is_complete_reply]
-        set content [json template {
-            {"status":"~S:status"}
-        }]
+	if {$status eq "incomplete"} {
+	    set content [json template {
+		{
+		    "status":"~S:status",
+		    "indent":"~S:b"
+		}
+	    }]
+	} else {
+	    set content [json template {
+		{"status":"~S:status"}
+	    }]
+	}
     }
+    # puts jmsg=$jmsg
     respond $jmsg
     respond [jmsg::status $ph idle]
 }
