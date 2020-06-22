@@ -63,6 +63,16 @@ proc display_data {mimetype body id} {
     }
 }
 
+proc execute_result {n result {mimetype "text/plain"}} {
+    json template {
+	{
+	    "execution_count" : "~N:n",
+	    "data": {"~S:mimetype" : "~S:result"},
+	    "metadata" : {}
+	}
+    }
+}
+
 proc display {mimetype body} {
     variable display_id
     incr display_id
@@ -213,26 +223,44 @@ proc execute_request {jmsg} {
         }]
     }
     respond $response
-
+    
     if {[catch {slave eval $code} result]} {
-        puts stderr [join [lrange [split $::errorInfo \n] 0 end-2] \n]
+        set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
+	json set rcontent ename [json string "Tcl error"]; # error code, if present
+	json set rcontent evalue [json string $result];
+	json set rcontent traceback [json array [list "string" $emsg]]
+	
+	set err [jmsg::newiopub $ph error]
+	dict with err {
+	    set content $rcontent
+	}
+	respond $err
+	
+	json set rcontent status [json string "error"]
+	
     } else {
-        if {$result ne {} && [string index [string trim $code] end] ne ";"} {puts stdout $result}
+        if {$result ne {}} {
+	    set response [jmsg::newiopub $ph execute_result]
+	    dict with response {
+		set content [execute_result $exec_counter $result]
+	    }
+	    respond $response
+	}
+	
+	json set rcontent status [json string "ok"]
+	json set rcontent user_expressions [json object]
+	json set rcontent payload [json array]
     }
+
+    json set rcontent execution_count [json number $exec_counter]
+
     dict with jmsg {
         set parent $ph
         set username [json get $header username]
         set header  [jmsg::newheader $username execute_reply]
-        set content [json template {
-            {
-                "status":"ok",
-                "execution_count":"~N:exec_counter",
-                "user_expressions": {},
-		"payload": []
-
-            }
-        }]       
+        set content $rcontent       
     }
+
     respond $jmsg
     respond [jmsg::status $ph idle]
 }

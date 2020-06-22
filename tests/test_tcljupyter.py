@@ -21,7 +21,8 @@ class TclJupyterTests(jkt.KernelTests):
     # Samples of code which generate a result value (ie, some text
     # displayed as Out[n])
     code_execute_result = [
-        {'code': 'expr {6 * 7}', 'result': '42'}
+        {'code': 'expr {6 * 7}', 'result': '42'},
+        {'code': 'expr {6 * 7};', 'result': '42'}
     ]
 
     # Samples of code which should generate a rich display output, and
