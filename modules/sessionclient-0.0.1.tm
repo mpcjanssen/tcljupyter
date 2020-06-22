@@ -227,7 +227,8 @@ proc execute_request {jmsg} {
             {
                 "status":"ok",
                 "execution_count":"~N:exec_counter",
-                "user_expressions": {}
+                "user_expressions": {},
+		"payload": []
 
             }
         }]       
