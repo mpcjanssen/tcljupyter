@@ -227,7 +227,7 @@ proc execute_request {jmsg} {
     if {[catch {slave eval $code} result]} {
         set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
 	json set rcontent ename [json string "Tcl error"]; # error code, if present
-	json set rcontent evalue [json string $result];
+	json set rcontent evalue [json string $result]
 	json set rcontent traceback [json array [list "string" $emsg]]
 	
 	set err [jmsg::newiopub $ph error]
@@ -240,6 +240,9 @@ proc execute_request {jmsg} {
 	
     } else {
         if {$result ne {}} {
+        if {[string index [string trim $code] end] eq ";"} {
+            set result {}
+        }
 	    set response [jmsg::newiopub $ph execute_result]
 	    dict with response {
 		set content [execute_result $exec_counter $result]
