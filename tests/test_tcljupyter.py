@@ -25,6 +25,10 @@ class TclJupyterTests(jkt.KernelTests):
         {'code': 'expr {6 * 7};', 'result': '42'}
     ]
 
+    # Tests on is_complete_* interactions between frontend and kernel
+    complete_code_samples = ['expr {1}', 'puts "hello, world"', 'proc foo {x} {\n  expr {x * 2} \n}']
+    incomplete_code_samples = ['expr {1', 'puts "hello, world', 'proc foo {x} {\n  expr {x * 2}']
+    
     # Samples of code which should generate a rich display output, and
     # the expected MIME type
     # code_display_data = [
