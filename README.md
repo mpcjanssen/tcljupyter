@@ -17,15 +17,13 @@ If you want to try it out without installation you can use the Binder version in
 
 ### Dependencies
 
-The tcl used to run the `init.tcl` script should have the following available:
+The Tcl used to run the `init.tcl` script should have the following available:
 
 - Tcl 8.6 with threads
 - [tclzmq](https://github.com/jdc8/tclzmq) 
 - [rl_json](https://github.com/RubyLane/rl_json) 0.11.0 or higher
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) uuid
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) sha256
-
-
 
 ## Supported
 
@@ -40,6 +38,17 @@ Most web client commands are supported. Only thing missing is reading from stdin
 
 
 If a cell ends with `;` the last result is not displayed.
+
+## Test suite
+
+A prequisite is the [jupyter_kernel_test](https://github.com/jupyter/jupyter_kernel_test) (JKT) module:
+
+`pip install jupyter_kernel_test`
+
+To run the test suite, execute (from within the checkout directory):
+
+`python -m tests.test_tcljupyter`
+
 
 ## Design
 
