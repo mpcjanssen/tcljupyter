@@ -32,7 +32,7 @@ Easiest way to build tclzmq on Windows is to use mingw.
 - Install the msys zmq packages
 
 ```
-pacman -Syu mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-zeromq mingw32/mingw-w64-i686-zeromq
+pacman -Syu mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-zeromq
 ```
 - Run the `build.tcl` installer from the tclzmq distro. NB: Static builds don't work in the sense that they are the same as shared builds.
 
