@@ -25,6 +25,18 @@ The Tcl used to run the `init.tcl` script should have the following available:
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) uuid
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) sha256
 
+### Build tclzmq on windows
+
+Easiest way to build tclzmq on Windows is to use mingw.
+
+- Install the msys zmq packages
+
+```
+pacman -Syu mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-zeromq mingw32/mingw-w64-i686-zeromq
+```
+- Run the `build.tcl` installer from the tclzmq distro. NB: Static builds don't work in the sense that they are the same as shared builds.
+
+
 ## Supported
 
 Most web client commands are supported. Only thing missing is reading from stdin with for example `gets`. 
