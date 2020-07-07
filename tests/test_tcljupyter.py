@@ -22,7 +22,7 @@ class TclJupyterTests(jkt.KernelTests):
     # displayed as Out[n])
     code_execute_result = [
         {'code': 'expr {6 * 7}', 'result': '42'},
-        {'code': 'expr {6 * 7};', 'result': '42'}
+        {'code': 'expr {6 * 7};', 'result': ''}
     ]
 
     # Tests on is_complete_* interactions between frontend and kernel
