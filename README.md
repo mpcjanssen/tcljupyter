@@ -29,6 +29,8 @@ The Tcl used to run the `init.tcl` script should have the following available:
 
 Easiest way to build tclzmq on Windows is to use mingw.
 
+- Install tcllib
+- Install critcl
 - Install the msys zmq packages
 
 ```
