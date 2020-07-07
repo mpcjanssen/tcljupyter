@@ -17,7 +17,7 @@ If you want to try it out without installation you can use the Binder version in
 
 ### Dependencies
 
-The tcl used to run the `init.tcl` script should have the following available:
+The Tcl used to run the `init.tcl` script should have the following available:
 
 - Tcl 8.6 with threads
 - [tclzmq](https://github.com/jdc8/tclzmq) 
@@ -25,6 +25,18 @@ The tcl used to run the `init.tcl` script should have the following available:
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) uuid
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) sha256
 
+### Build tclzmq on windows
+
+Easiest way to build tclzmq on Windows is to use mingw.
+
+- Install tcllib
+- Install critcl
+- Install the msys zmq packages
+
+```
+pacman -Syu mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-zeromq
+```
+- Run the `build.tcl` installer from the tclzmq distro. NB: Static builds don't work in the sense that they are the same as shared builds.
 
 
 ## Supported
@@ -40,6 +52,17 @@ Most web client commands are supported. Only thing missing is reading from stdin
 
 
 If a cell ends with `;` the last result is not displayed.
+
+## Test suite
+
+A prequisite is the [jupyter_kernel_test](https://github.com/jupyter/jupyter_kernel_test) (JKT) module:
+
+`pip install jupyter_kernel_test`
+
+To run the test suite, execute (from within the checkout directory):
+
+`python -m tests.test_tcljupyter`
+
 
 ## Design
 
