@@ -22,12 +22,12 @@ proc connect {connection_file} {
     set key [json get $conn key]
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
     zmq context context
-    listen shell ROUTER
-    listen control ROUTER
-    listen stdin ROUTER
     starthb
     set ports(iopub) [zmq socket context PUB]
     $ports(iopub) bind [address iopub]
+    listen shell ROUTER
+    listen control ROUTER
+    listen stdin ROUTER
     start [pid]
 }
 
@@ -54,6 +54,14 @@ proc on_recv {port} {
     variable ports
     variable t
     set to $t
+    # puts -nonewline "Polling for message on $port"
+    set res [zmq poll [list [list $ports($port) POLLIN]] 1]
+    if {$res eq ""} {
+      # puts "...none"
+      return
+    } {
+      # puts "...handling"
+    }
     set zmsg [zmsg recv $ports($port)]
     # puts "\n\n\n\n$port [string repeat < 20]"
     # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
@@ -130,14 +138,18 @@ proc starthb {} {
     thread::send $t -async [list zmq device FORWARDER zsocket zsocket]
 }
 
+proc listen_loop port {
+  on_recv $port
+  after 500 [list listen_loop $port]
+}
+
 proc listen {port type} {
     variable ports
     set ports($port) [zmq socket context $type]
     $ports($port) bind [address $port]
     # bit of a nasty hack because readable callback is a single
     # command without arguments
-    interp alias {} on_recv_$port {} on_recv $port
-    $ports($port) readable on_recv_$port
+    listen_loop $port
 }
 
 proc address {port} {
