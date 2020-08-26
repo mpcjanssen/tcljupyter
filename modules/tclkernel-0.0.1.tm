@@ -1,4 +1,4 @@
-package require zmq
+package require tmq
 package require Thread
 package require jmsg
 
@@ -19,15 +19,16 @@ proc connect {connection_file} {
     variable ports
     set f [open $connection_file]
     set conn [read $f]
+    close $f
     set key [json get $conn key]
+    puts $conn
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
-    zmq context context
     listen shell ROUTER
     listen control ROUTER
     listen stdin ROUTER
-    starthb
-    set ports(iopub) [zmq socket context PUB]
-    $ports(iopub) bind [address iopub]
+    listen iopub PUB
+    listen hb HEARTBEAT
+
     start [pid]
 }
 
@@ -119,32 +120,16 @@ proc start {pid} {
     }
 }
 
-proc starthb {} {
-    set t [thread::create]
-    thread::send $t -async [list set auto_path $::auto_path]
-    thread::send $t -async {package require zmq}
-    thread::send $t -async {zmq context context}
-    thread::send $t -async [list zmq socket zsocket context REP]
-    thread::send $t -async [list zsocket bind [address hb]]
-    thread::send $t -async [list thread::wait]
-    thread::send $t -async [list zmq device FORWARDER zsocket zsocket]
-}
 
 proc listen {port type} {
-    variable ports
-    set ports($port) [zmq socket context $type]
-    $ports($port) bind [address $port]
-    # bit of a nasty hack because readable callback is a single
-    # command without arguments
-    interp alias {} on_recv_$port {} on_recv $port
-    $ports($port) readable on_recv_$port
+    tmq::listen [address $port] [namespace code [list on_recv $port]]
 }
 
 proc address {port} {
     variable conn
-    set address [json get $conn transport]://
-    append address [json get $conn ip]:
-    append address [json get $conn ${port}_port]
+    set address [list transport [json get $conn transport]]
+    dict set address ip [json get $conn ip]
+    dict set address port [json get $conn ${port}_port]
     return $address
 }
 

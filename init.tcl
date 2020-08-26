@@ -7,7 +7,7 @@ if {[llength $argv] == 0} {
   puts $auto_path
   puts [package require Thread]
   puts [package require rl_json]
-  puts [package require zmq]
+  puts [package require tmq]
   exit 1
 }
 lassign $argv connection_file
