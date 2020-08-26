@@ -122,12 +122,13 @@ proc start {pid} {
 
 
 proc listen {port type} {
-    tmq::listen [address $port] [namespace code [list on_recv $port]]
+    tmq::listen $type [address $port] [namespace code [list on_recv $port]]
 }
 
 proc address {port} {
     variable conn
     set address [list transport [json get $conn transport]]
+    dict set address channel $port
     dict set address ip [json get $conn ip]
     dict set address port [json get $conn ${port}_port]
     return $address
