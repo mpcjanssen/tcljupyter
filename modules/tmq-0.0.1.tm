@@ -19,7 +19,7 @@ proc handle_router {s} {
     flush $s
     yield
     while {1} {
-        puts [read $s]
+        puts [binary encode hex [read $s]]
         if {[eof $s]} {close $s ; return}
         yield
     }
@@ -32,7 +32,7 @@ proc handle_pub {s} {
     flush $s
     yield
     while {1} {
-        puts [read $s]
+        puts [binary encode hex [read $s]]
         if {[eof $s]} {close $s ; return}
         yield
     }
