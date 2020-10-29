@@ -8,9 +8,9 @@ mkdir -p src
 cd src
 export TCLLIBPATH=$PREFIX
 
-wget https://github.com/mpcjanssen/rl_json/archive/0.11.0.tar.gz -O rl_json.tar.gz
+wget https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O rl_json.tar.gz
 tar xf rl_json.tar.gz
-cd rl_json-0.11.0
+cd rl_json-binder
 ./configure --prefix=$PREFIX
 make && make install
 cd ..
