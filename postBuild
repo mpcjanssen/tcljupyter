@@ -8,7 +8,7 @@ mkdir -p src
 cd src
 export TCLLIBPATH=$PREFIX
 
-wget https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O rl_json.tar.gz
+wget -q https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O rl_json.tar.gz
 tar xf rl_json.tar.gz
 cd rl_json-binder
 ./configure --prefix=$PREFIX
@@ -16,20 +16,20 @@ make && make install
 cd ..
 
 
-wget https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O tcllib.tar.gz
+wget -q https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O tcllib.tar.gz
 tar xf tcllib.tar.gz
 cd tcllib-tcllib-1-20
 ./configure --prefix=$PREFIX
 make && make install
 cd ..
 
-wget https://github.com/mpcjanssen/critcl/archive/3.1.18.1.tar.gz -O criticl.tar.gz
+wget -q https://github.com/mpcjanssen/critcl/archive/3.1.18.1.tar.gz -O criticl.tar.gz
 tar xf criticl.tar.gz
 cd critcl-3.1.18.1/
 tclsh build.tcl install
 cd ..
 
-wget https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O tclzmq.tar.gz
+wget -q https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O tclzmq.tar.gz
 tar xf tclzmq.tar.gz
 cd tclzmq-binder
 tclsh build.tcl install $PREFIX -zmq ${PREFIX}
