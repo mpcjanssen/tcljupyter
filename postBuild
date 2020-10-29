@@ -30,6 +30,7 @@ tclsh build.tcl install
 cd ..
 
 wget https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O tclzmq.tar.gz
+tar xvf tclzmq.tar.gz
 cd tclzmq-binder
 tclsh build.tcl install $PREFIX -zmq ${PREFIX}
 cd ..
