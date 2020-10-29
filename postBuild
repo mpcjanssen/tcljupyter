@@ -8,21 +8,29 @@ mkdir -p src
 cd src
 export TCLLIBPATH=$PREFIX
 
-git clone https://github.com/RubyLane/rl_json.git
-cd rl_json
-./configure --prefix=$PREFIX
-make && make install
-git clone https://github.com/tcltk/tcllib
-cd tcllib
+wget https://github.com/mpcjanssen/rl_json/archive/0.11.0.tar.gz -O rl_json.tar.gz
+tar xvf rl_json.tar.gz
+cd rl_json-0.11.0
 ./configure --prefix=$PREFIX
 make && make install
 cd ..
-git clone https://github.com/andreas-kupries/critcl
-cd critcl
+
+
+wget https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O tcllib.tar.gz
+tar xvf tcllib.tar.gz
+cd tcllib-tcllib-1-20
+./configure --prefix=$PREFIX
+make && make install
+cd ..
+
+wget https://github.com/mpcjanssen/critcl/archive/3.1.18.1.tar.gz -O criticl.tar.gz
+tar xvf criticl.tar.gz
+cd critcl-3.1.18.1/
 tclsh build.tcl install
 cd ..
-git clone https://github.com/mpcjanssen/tclzmq
-cd tclzmq
+
+wget https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O tclzmq.tar.gz
+cd tclzmq-binder
 tclsh build.tcl install $PREFIX -zmq ${PREFIX}
 cd ..
 export KERNELPATH=$PREFIX/share/jupyter/kernels/tcljupyter
