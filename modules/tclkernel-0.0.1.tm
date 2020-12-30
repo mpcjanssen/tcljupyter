@@ -51,7 +51,7 @@ proc respond {jmsg} {
     $ports($port) send [lindex $zmsg end]
 }
 
-proc on_recv {port} {
+proc on_recv {port zmsg} {
     variable ports
     variable t
     set to $t

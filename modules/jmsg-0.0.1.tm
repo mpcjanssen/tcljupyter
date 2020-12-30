@@ -21,9 +21,8 @@ namespace eval jmsg {
     }
 
     proc new {zmsg} {
-        set buffers [lassign $zmsg port uuid delimiter hmac header parent metadata content]
+        set buffers [lassign $zmsg port delimiter hmac header parent metadata content]
         dict set result port $port
-        dict set result uuid $uuid
         dict set result delimiter $delimiter
         dict set result hmac $hmac
         dict set result header $header
@@ -32,8 +31,7 @@ namespace eval jmsg {
         dict set result content $content
         set calc_hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]]
         if {$calc_hmac ne $hmac} {
-            puts "ERROR: HMAC mismatch $calc_hmac : $hmac"
-            exit -1
+            return -code error "HMAC mismatch $calc_hmac : $hmac"
         }
         return $result
     }
