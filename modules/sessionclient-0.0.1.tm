@@ -226,22 +226,25 @@ proc execute_request {jmsg} {
     set lines [split $code \n]
     set error {}
     set code {}
-    set magics {timeit 0 timeit_count 1}
+    set magics {timeit 0 timeit_count 1 noresult 0}
     set expect_magics 1
     foreach line $lines {
 	set trimmed [string trim $line]
 	if {$expect_magics && [string range $trimmed 0 1] eq {%%}} {
 	   set magic_parts [split $trimmed]
-	   lassign $magic_parts magic_cmd magic_count
+	   lassign $magic_parts magic_cmd magic_arg1 magic_arg2
            set magic_cmd [string range $magic_cmd 2 end]
 	   switch -exact $magic_cmd {
 		timeit {
                     dict set magics timeit 1
-                    if {$magic_count ne {}} {
-                        dict set magics timeit_count $magic_count
+                    if {$magic_arg1 ne {}} {
+                        dict set magics timeit_count $magic_arg1
                     }
                 }
-		default {set error "Invalid magic \$\$$magic_cmd"}
+                noresult {
+		    dict set magics noresult 1
+                }
+		default {set error "Invalid magic %%$magic_cmd"}
 	   }
 	   continue 
 	} else {
@@ -277,7 +280,7 @@ proc execute_request {jmsg} {
 	
     } else {
         if {$result ne {}} {
-            if {[string index [string trim $code] end] eq ";"} {
+            if {[dict get $magics noresult]} {
                 set result {}
             }
 	    set response [jmsg::newiopub $ph execute_result]
