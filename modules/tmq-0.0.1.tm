@@ -12,23 +12,20 @@ namespace eval tmq {
 	return $decoded
 	}
 
-	set greeting [join [subst {
-		ff00000000000000017f03
+	set greeting [binary decode hex [join [subst {
+		ff00000000000000017f
+		03
 		00
 		[binary encode hex NULL]
-		[string repeat 00 15]
-		01
+		[string repeat 00 16]
+		00
 		[string repeat 00 31]
-	}] ""]
-	set ready [join [subst {
-		04
-		29
-		05
-		[binary encode hex READY]
-		0B
-		[binary encode hex Socket-Type]
-	
-	}] ""]
+	}] ""]]
+
+	if {[string length $greeting] != 64} {
+		error "Invalid greeting constant [string length $greeting] <> 64"
+	}
+
 
 	puts \f
 
@@ -49,22 +46,28 @@ namespace eval tmq {
 	proc handle {type s} {
 	    variable greeting
 	    variable ready
+
 		puts "Incoming $type connection"
 		fconfigure $s -blocking 1 -encoding binary
 		# Negotiate version
-		pputs $s [string range [binary decode hex $greeting] 0 10]
+		pputs $s [string range $greeting 0 10]
 		flush $s
 		set remote_greeting [read $s 11]
 	    # Send rest of greeting
-		pputs $s [string range [binary decode hex $greeting] 11 end]
+		pputs $s [string range $greeting 11 end]
 		flush $s
 		append remote_greeting [read $s [expr {64-11}]]
 
 		puts "Remote greeting [display $remote_greeting]"
 		# Send the ready command
-		set msg \x05READY\x0bSocket-Type[len32 $type]$type\x08Identity[len32 ""]
-		pputs $s \x04[len32 $msg]
-		pputs $s $msg
+
+		set msg \x05READY\x0bSocket-Type[len32 $type]$type
+		if {$type eq "ROUTER"} {
+			append msg \x08Identity[len32 ""]
+		}
+		
+		puts ">>> display ([string length $msg]) [display [zlen $msg]$msg]"
+		pputs $s [zlen $msg]$msg
 		flush $s
 				
 
@@ -73,15 +76,25 @@ namespace eval tmq {
 		fconfigure $s -blocking 0 -encoding binary
 		yield
 		while {1} {
-			puts [display [read $s]]
+			puts "<<<< [display [read $s]]"
 				if {[eof $s]} {close $s ; return}
 			yield
 		}
 	}
 	
+	proc zlen {str} {
+		if {[string length $str] < 256} {
+			return \x04[len8 $str]
+		} else {
+			return \x06[len32 $str]
+		}
+	}
 
 	proc len32 {str} {
 			return [binary format I [string length $str]]
+	}
+	proc len8 {str} {
+			return [binary format c [string length $str]]
 	}
 
 
