@@ -55,7 +55,9 @@ If a cell ends with `;` the last result is not displayed.
 
 ### Magic commands
 
-   * `\$\$timeit ?count?`: Time the execution of the cell and display the results. Changing count will execute the cell multiple times and show the average time.
+Magics are lines starting with `%%` at the top of the cell.
+
+   * `%%timeit ?count?`: Time the execution of the cell and display the results. Changing count will execute the cell multiple times and show the average time.
 
 ## Test suite
 

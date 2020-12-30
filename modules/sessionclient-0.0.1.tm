@@ -230,7 +230,7 @@ proc execute_request {jmsg} {
     set expect_magics 1
     foreach line $lines {
 	set trimmed [string trim $line]
-	if {$expect_magics && [string range $trimmed 0 1] eq {$$}} {
+	if {$expect_magics && [string range $trimmed 0 1] eq {%%}} {
 	   set magic_parts [split $trimmed]
 	   lassign $magic_parts magic_cmd magic_count
            set magic_cmd [string range $magic_cmd 2 end]
