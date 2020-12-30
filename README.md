@@ -53,6 +53,12 @@ Most web client commands are supported. Only thing missing is reading from stdin
 
 If a cell ends with `;` the last result is not displayed.
 
+### Magic commands
+
+Magics are lines starting with `%%` at the top of the cell.
+
+   * `%%timeit ?count?`: Time the execution of the cell and display the results. Changing count will execute the cell multiple times and show the average time.
+
 ## Test suite
 
 A prequisite is the [jupyter_kernel_test](https://github.com/jupyter/jupyter_kernel_test) (JKT) module:
