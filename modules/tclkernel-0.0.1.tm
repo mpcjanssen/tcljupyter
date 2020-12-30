@@ -122,7 +122,7 @@ proc start {pid} {
 
 
 proc listen {port type} {
-    tmq::listen $type [address $port] [namespace code [list on_recv $port]]
+    tmq::listen $port $type [address $port] [namespace code [list on_recv $port]]
 }
 
 proc address {port} {

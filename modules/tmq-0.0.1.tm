@@ -29,21 +29,21 @@ namespace eval tmq {
 
 	puts \f
 
-	proc listen {type address callback} {
-		puts "Listening for $address ($type)"
-		socket -server [namespace code [list connection $type $address]] [dict get $address port]
+	proc listen {name type address callback} {
+		puts "Listening for $address ($name:$type)"
+		socket -server [namespace code [list connection $name $type $address]] [dict get $address port]
 	}
 
-	proc connection {type address s ip port} {
+	proc connection {name type address s ip port} {
 		puts "Incoming connection from $s ($ip:$port) on $address ($type) "
 		set context $address
 
 
-		coroutine ::tmq_$s handle [string toupper $type] $s
+		coroutine ::tmq_$s handle $name $port [string toupper $type] $s
 		fileevent $s readable ::tmq_$s
 	}
 
-	proc handle {type s} {
+	proc handle {name port type s} {
 	    variable greeting
 	    variable ready
 
@@ -65,9 +65,9 @@ namespace eval tmq {
 		if {$type eq "ROUTER"} {
 			append msg \x08Identity[len32 ""]
 		}
-		
-		puts ">>> display ([string length $msg]) [display [zlen $msg]$msg]"
-		pputs $s [zlen $msg]$msg
+		set zmsg [zlen $msg]$msg
+		puts ">>>> $name ($port:$type)\n[display $zmsg]"
+		pputs $s $zmsg
 		flush $s
 				
 
@@ -75,13 +75,35 @@ namespace eval tmq {
 		
 		fconfigure $s -blocking 0 -encoding binary
 		yield
+		set data {}
 		while {1} {
-			puts "<<<< [display [read $s]]"
-				if {[eof $s]} {close $s ; return}
+			set part [read $s]
+			append data $part
+			puts "<<<< $name ($port:$type)\n[display $part]"
+			if {[eof $s]} {close $s ; return}
+			if {$data ne {}} {
+				switch -exact [string index $data 0] {
+					\x00 {lassign [handle_message $data] done data}
+					\x01 {lassign [handle_message $data] done data}
+					\x02 {lassign [handle_message $data] done data}
+					\x03 {lassign [handle_message $data] done data}
+					default {lassign [handle_message $data] done data}
+				}
+			}
 			yield
 		}
 	}
 	
+	proc handle_message data {
+		return {1 {}}
+
+	}
+
+	proc handle_command data {
+		return {1 {}}
+
+	}
+
 	proc zlen {str} {
 		if {[string length $str] < 256} {
 			return \x04[len8 $str]
