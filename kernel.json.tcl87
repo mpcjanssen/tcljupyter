@@ -1,0 +1,2 @@
+{"argv":["tclsh8.7","/home/mpcjanssen/Src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl 8.7","language":"tcl","interrupt_mode":"message",
+"env": {"TCLLIBPATH":"/usr/lib/tcltk/x86_64-linux-gnu/ /usr/lib /usr/share/tcltk/tcl8.6"}}
