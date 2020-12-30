@@ -262,7 +262,7 @@ proc execute_request {jmsg} {
         } $timeit_count]
     }
     if {[dict get $magics timeit]} {
-	slave eval [list puts $time_result]
+	slave eval [list jupyter::html "<p style='color:green;'>$time_result</p>"]
     }
     if {$error} {
         set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
