@@ -162,11 +162,11 @@ namespace eval tmq {
 		} elseif {$first in [list \x02 \x03 \x06]} {
 			if {[string length $data] < 5} {return [list {} $data 0]}
 			binary scan $data cW _ length
-			set rest [string range $data 5 end]
+			set rest [string range $data 9 end]
 		} else {
 			return -code error "Unknown start of frame [display $data]"
 		}
-		# puts "$length < [string length $rest] ?"
+		puts "$length < [string length $rest] ?"
 		if {[string length $rest] < $length} {
 			return [list {} $data 0]
 		}
