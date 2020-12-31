@@ -11,7 +11,7 @@ interp alias {} pputs {} puts -nonewline
 
 
 set conn {}
-set kernel_id tcljupyter-[pid]
+set kernel_id  [uuid::uuid generate]
 
 array set ports {}
 set sessions {}
@@ -19,12 +19,13 @@ set t {}
 
 proc connect {connection_file} {
     variable conn
-    variable ports
+    variable ports 
     set f [open $connection_file]
     set conn [read $f]
     close $f
     set key [json get $conn key]
     puts $conn
+
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
     listen shell ROUTER
     listen control ROUTER
@@ -35,26 +36,21 @@ proc connect {connection_file} {
     start [pid]
 }
 
-proc respond {channel jmsg} {
+proc respond {name jmsg} {
     variable key
     variable kernel_id
     dict with jmsg {
         json set header session $kernel_id
         set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]] 
+        puts "HMAC: calculating for: $header$parent$metadata$content\nHMAC: $hmac\nHMAC: [interp alias {} hmac]"
     }
     set zmsg [jmsg::znew $jmsg]
-    puts "RESPOND to $channel:\n[string range [join $zmsg \n] 0 1200]\n"
-    foreach msg [lrange $zmsg 0 end-1] {
-         set length [string length $msg]
-         set length_bytes [binary format W $length]
-         pputs $channel \x03$length$msg
-         flush $channel
+    if {$name eq "iopub"} {
+        set msg_type [jmsg::msg_type $jmsg]
+        set zmsg [linsert $zmsg 0 $msg_type]
     }
-    set msg [lindex $zmsg end]
-    set length [string length $msg]
-    set length_bytes [binary format W $length]
-    pputs $channel \x03$length$msg
-    flush $channel
+    puts "RESPOND to $name:\n[string range [join $zmsg \n] 0 1200]\n"
+    tmq::send $name $zmsg
 }
 
 proc on_recv {jmsg} {
@@ -161,7 +157,7 @@ proc handle_control_request {jmsg} {
         set parent $ph
         json set header msg_type $reply_type
     }
-    respond $channel $jmsg
+    respond control $jmsg
     if {$shutdown} {
         puts "Shutting down kernel [pid]"
         after 0 exit
@@ -173,7 +169,7 @@ proc handle_info_request {jmsg} {
     variable modver
     set parent [dict get $jmsg header]
     set channel [dict get $jmsg channel]
-    # respond $channel [jmsg::status $parent busy]
+    respond iopub [jmsg::status $parent busy]
     dict with jmsg {
         set parent $header
         set username [json get $header username]
@@ -185,8 +181,8 @@ proc handle_info_request {jmsg} {
 			"5.3"]
         set content [json template $::kernel_info]
     }
-    respond $channel $jmsg
-    # respond $channel [jmsg::status $parent idle]
+    respond shell $jmsg
+    respond iopub [jmsg::status $parent idle]
 }
 set kernel_info { {
     "status" : "ok",

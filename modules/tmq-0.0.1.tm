@@ -10,6 +10,39 @@ namespace eval tmq {
 	return $decoded
 	}
 
+	proc send {name zmsg} {
+		variable ${name}_socket
+		set channel [set ${name}_socket]
+		puts "Sending on $name zmq port ($channel)"
+		foreach msg [lrange $zmsg 0 end-1] {
+			set length [string length $msg]
+			if {$length > 255} {
+				set format W
+				set prefix \x03
+			} else {
+				set format c
+				set prefix \x01	
+			}
+			set length_bytes [binary format $format $length]
+			puts [display $prefix$length_bytes$msg]
+			pputs $channel $prefix$length_bytes$msg
+			flush $channel
+		}
+		set msg [lindex $zmsg end]
+		set length [string length $msg]
+		if {$length > 255} {
+			set format W
+			set prefix \x02
+		} else {
+			set format c
+			set prefix \x00	
+		}
+		set length_bytes [binary format $format $length]
+		puts [display $prefix$length_bytes$msg]
+		pputs $channel $prefix$length_bytes$msg
+		flush $channel
+	}
+
 	set greeting [binary decode hex [join [subst {
 		ff00000000000000017f
 		03
@@ -24,9 +57,6 @@ namespace eval tmq {
 		error "Invalid greeting constant [string length $greeting] <> 64"
 	}
 
-
-	puts \f
-
 	proc listen {name type address callback} {
 		puts "Listening for $address ($name:$type)"
 		socket -server [namespace code [list connection $name $type $address]] [dict get $address port]
@@ -34,9 +64,9 @@ namespace eval tmq {
 
 	proc connection {name type address s ip port} {
 		puts "Incoming connection from $s ($ip:$port) on $address ($type) "
-		dict with $adrress {
-			variable $channel_socket 
-			set channel_socket $s
+		dict with address {
+			variable ${channel}_socket 
+			set ${channel}_socket $s
 		}
 		set context $address
 
@@ -100,6 +130,7 @@ namespace eval tmq {
 					lappend frames $frame
 					if {$last} {
 						puts "Handling $zmq_type:\n[join $frames \n]"
+						flush stdout
 						if {$zmq_type eq "msg"} {
 							set jmsg [jmsg::new $channel $name $type {*}$frames]
 							on_recv $jmsg
