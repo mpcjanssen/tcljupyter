@@ -42,8 +42,8 @@ proc respond {name jmsg} {
     variable kernel_id
     dict with jmsg {
         json set header session $kernel_id
-        set hmac [hmac "$header$parent$metadata[encoding convertto utf-8 $content]"]
-        puts "HMAC: calculating for: $header$parent$metadata[encoding convertto utf-8 $content]\nHMAC: $hmac\nHMAC: [interp alias {} hmac]"
+        set hmac [hmac "[encoding convertto utf-8 $header$parent$metadata$content]"]
+        puts "HMAC: calculating for: [encoding convertto utf-8 $header$parent$metadata$content]\nHMAC: $hmac\nHMAC: [interp alias {} hmac]"
     }
     set zmsg [jmsg::znew $jmsg]
     if {$name eq "iopub"} {
@@ -51,7 +51,7 @@ proc respond {name jmsg} {
         set zmsg [linsert $zmsg 0 $msg_type]
     }
     puts "RESPOND to $name:\n[string range [join $zmsg \n] 0 1200]\n"
-    tmq::send $name $zmsg
+    if {[catch {tmq::send $name $zmsg}]} {exit -1}
 }
 
 proc on_recv {jmsg} {

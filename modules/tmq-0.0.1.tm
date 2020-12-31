@@ -11,9 +11,27 @@ namespace eval tmq {
 	}
 
 	proc send {name zmsg} {
+
+		# Don't kill the client
+		variable lastsend
+		set now [clock milliseconds]
+		if {[info exists lastsend($name)]} {
+			set delta [expr {$now - $lastsend($name) }]
+		} else {
+			set delta 100
+		}
+		# if {$delta < 100} {
+		# 	puts "SLLLOOOOOWWWWWW DOOOOOOWWWWWW"
+		# 	after [expr {100-$delta}]
+		# }
+		set lastsend($name) $now
 		variable ${name}_socket
 		set channel [set ${name}_socket]
 		puts "Sending on $name zmq port ($channel)"
+
+		# on the wire format is UTF-8
+		set zmsg [lmap m $zmsg {encoding convertto utf-8 $m}]
+
 		foreach msg [lrange $zmsg 0 end-1] {
 			set length [string length $msg]
 			if {$length > 255} {

@@ -42,7 +42,7 @@ namespace eval jmsg {
             lappend result $header
             lappend result $parent
             lappend result $metadata
-            lappend result [encoding convertto utf-8 $content]
+            lappend result $content
             return $result
         }
     }
