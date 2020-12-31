@@ -33,7 +33,7 @@ proc stream {name text} {
             }
         }]
     }
-    respond $response
+    respond iopub $response
 }
 
 proc display_data {mimetype body id} {
@@ -82,7 +82,7 @@ proc display {mimetype body} {
     dict with response {
         set content [display_data $mimetype $body $id]
     }
-    respond $response
+    respond  iopub $response
     return $id
 }
 
@@ -92,7 +92,7 @@ proc updatedisplay {id mimetype body} {
     dict with response {
         set content [display_data $mimetype $body $id]
     }
-    respond $response
+    respond iopub $response
 }
 
 proc bgerror {jmsg errorInfo} {
@@ -112,14 +112,14 @@ proc bgerror {jmsg errorInfo} {
             }
         }]       
     }
-    respond $jmsg
-    respond [jmsg::status $ph idle]  
+    respond shell $jmsg
+    respond iopub [jmsg::status $ph idle]  
 }
 
 proc complete_request {jmsg} {
     variable ph
     set ph [dict get $jmsg header]
-    respond [jmsg::status $ph busy]
+    respond iopub [jmsg::status $ph busy]
      
     set cursor_pos [json get [dict get $jmsg content] cursor_pos]
     set code [json get [dict get $jmsg content] code]
@@ -148,8 +148,8 @@ proc complete_request {jmsg} {
             }
         }]       
     }
-    respond $jmsg
-    respond [jmsg::status $ph idle]
+    respond shell $jmsg
+    respond iopub [jmsg::status $ph idle]
 }
 
 proc is_complete_request {jmsg} {
@@ -158,7 +158,7 @@ proc is_complete_request {jmsg} {
     variable lastPos
     
     set ph [dict get $jmsg header]
-    respond [jmsg::status $ph busy]
+    respond iopub [jmsg::status $ph busy]
      
     set code [json get [dict get $jmsg content] code]
     append code \n
@@ -210,7 +210,7 @@ proc execute_request {jmsg} {
     incr exec_counter
     set ph [dict get $jmsg header]
 
-    respond [jmsg::status $ph busy]
+    respond iopub [jmsg::status $ph busy]
 
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $ph execute_input]
@@ -222,7 +222,7 @@ proc execute_request {jmsg} {
             }
         }]
     }
-    respond $response
+    respond shell $response
     
     if {[catch {slave eval $code} result]} {
         set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
@@ -234,7 +234,7 @@ proc execute_request {jmsg} {
 	dict with err {
 	    set content $rcontent
 	}
-	respond $err
+	respond iopub $err
 	
 	json set rcontent status [json string "error"]
 	
@@ -247,7 +247,7 @@ proc execute_request {jmsg} {
 	    dict with response {
 		set content [execute_result $exec_counter $result]
 	    }
-	    respond $response
+	    respond iopub $response
 	}
 	
 	json set rcontent status [json string "ok"]
@@ -264,12 +264,12 @@ proc execute_request {jmsg} {
         set content $rcontent       
     }
 
-    respond $jmsg
-    respond [jmsg::status $ph idle]
+    respond shell $jmsg
+    respond iopub [jmsg::status $ph idle]
 }
 
 
-proc respond {jmsg} {
+proc respond {name jmsg} {
     variable ::master
-    thread::send -async $master [list respond $jmsg]
+    thread::send -async $master [list respond $name $jmsg]
 }

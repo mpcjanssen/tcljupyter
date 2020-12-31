@@ -26,7 +26,6 @@ namespace eval tmq {
 			set length_bytes [binary format $format $length]
 			puts [display $prefix$length_bytes$msg]
 			pputs $channel $prefix$length_bytes$msg
-			flush $channel
 		}
 		set msg [lindex $zmsg end]
 		set length [string length $msg]
@@ -129,13 +128,17 @@ namespace eval tmq {
 				} {
 					lappend frames $frame
 					if {$last} {
-						puts "Handling $zmq_type:\n[join $frames \n]"
-						flush stdout
-						if {$zmq_type eq "msg"} {
-							set jmsg [jmsg::new $channel $name $type {*}$frames]
-							on_recv $jmsg
-						} else {
-							# TODO: ignore commands for now
+						if {[catch {
+							puts "Handling $zmq_type:\n[join $frames \n]"
+							flush stdout
+							if {$zmq_type eq "msg"} {
+								set jmsg [jmsg::new $channel $name $type {*}$frames]
+								on_recv $jmsg
+							} else {
+								# TODO: ignore commands for now
+							}
+						}]} {
+							puts "ERROR handling\n\n[join $frames \n]"
 						}
 						set frames {}
 						set zmq_type {}
