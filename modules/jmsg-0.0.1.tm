@@ -3,8 +3,9 @@ package require sha256
 package require uuid
 namespace import ::rl_json::*
 namespace eval jmsg {
+    variable id
     proc newheader {username msg_type} {
-        set msg_id [newid]
+        set msg_id [uuid::uuid generate]
         set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
         json template {
             {"msg_id":"~S:msg_id",
@@ -16,19 +17,18 @@ namespace eval jmsg {
         }  
     }
 
-    proc newid {} {
-        return [string map {- {}} [uuid::uuid generate]]   
-    }
-
-    proc new {zmsg} {
-        set buffers [lassign $zmsg port delimiter hmac header parent metadata content]
-        dict set result port $port
+    proc new {channel name type delimiter hmac header parent metadata content} {
+        dict set result name $name
+        dict set result type $type
+        dict set result channel $channel
         dict set result delimiter $delimiter
         dict set result hmac $hmac
         dict set result header $header
         dict set result parent $parent 
         dict set result metadata $metadata
         dict set result content $content
+        dict set result uuid ""
+        puts "JMSG: $result"
         set calc_hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]]
         if {$calc_hmac ne $hmac} {
             return -code error "HMAC mismatch $calc_hmac : $hmac"
@@ -37,8 +37,7 @@ namespace eval jmsg {
     }
     proc znew {jmsg} {
         dict with jmsg {
-            set result $uuid
-            lappend result $delimiter
+            set result $delimiter
             lappend result $hmac
             lappend result $header
             lappend result $parent
@@ -55,15 +54,23 @@ namespace eval jmsg {
         json get [dict get $msg parent] session         
     }
 
-    proc type {msg} {
+    proc msg_type {msg} {
         json get [dict get $msg header] msg_type                
+    }
+
+    proc name {msg} {
+        dict get $msg name              
+    }
+
+    proc channel {msg} {
+        dict get $msg channel              
     }
 
     proc newiopub {parent msg_type} {
         set username [json get $parent username]
         set header [jmsg::newheader $username $msg_type]
         set content [json template {{}}]
-        set jmsg [list port iopub uuid $msg_type delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
+        set jmsg [list port iopub uuid "" delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
         return $jmsg 
     }
 

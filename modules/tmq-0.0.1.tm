@@ -1,5 +1,3 @@
-interp alias {} pputs {} puts -nonewline
-
 namespace eval tmq {
 	proc display {data} {
 		set decoded {}
@@ -36,6 +34,10 @@ namespace eval tmq {
 
 	proc connection {name type address s ip port} {
 		puts "Incoming connection from $s ($ip:$port) on $address ($type) "
+		dict with $adrress {
+			variable $channel_socket 
+			set channel_socket $s
+		}
 		set context $address
 
 
@@ -43,20 +45,20 @@ namespace eval tmq {
 		fileevent $s readable ::tmq_$s
 	}
 
-	proc handle {name port type s} {
+	proc handle {name port type channel} {
 	    variable greeting
 	    variable ready
 
 		puts "Incoming $type connection"
-		fconfigure $s -blocking 1 -encoding binary
+		fconfigure $channel -blocking 1 -encoding binary
 		# Negotiate version
-		pputs $s [string range $greeting 0 10]
-		flush $s
-		set remote_greeting [read $s 11]
+		pputs $channel [string range $greeting 0 10]
+		flush $channel
+		set remote_greeting [read $channel 11]
 	    # Send rest of greeting
-		pputs $s [string range $greeting 11 end]
-		flush $s
-		append remote_greeting [read $s [expr {64-11}]]
+		pputs $channel [string range $greeting 11 end]
+		flush $channel
+		append remote_greeting [read $channel [expr {64-11}]]
 
 		puts "Remote greeting [display $remote_greeting]"
 		# Send the ready command
@@ -67,20 +69,29 @@ namespace eval tmq {
 		}
 		set zmsg [zlen $msg]$msg
 		puts ">>>> $name ($port:$type)\n[display $zmsg]"
-		pputs $s $zmsg
-		flush $s
+		pputs $channel $zmsg
+		flush $channel 
 			
-		fconfigure $s -blocking 0 -encoding binary
+		fconfigure $channel  -blocking 0 -encoding binary
 		yield
 		set data {}
 		set frames {}
+		set zmq_type {}
 		while {1} {
-			set part [read $s]
+			set part [read $channel]
 			append data $part
-			puts "<<<< $name ($port:$type)\n[display $part]"
-			if {[eof $s]} {close $s ; return}
+			puts "<<<< $name ($channel:$port:$type)\n[display $part]"
+			if {[eof $channel]} {close $channel ; return}
 			set frame_read 1
 		    while {$frame_read && $data ne {}} {
+					if {$data ne {} && $zmq_type eq {}} {
+					set first [string index $data 0]
+					if {$first in [list \x04 \x06]} {
+						set zmq_type cmd
+					} else {
+						set zmq_type msg
+					}
+				}
 				lassign [read_frame $data] frame data last
 				if {$frame eq {}} {
 					puts "No more frames to read for now"
@@ -88,13 +99,15 @@ namespace eval tmq {
 				} {
 					lappend frames $frame
 					if {$last} {
-						catch {
-						puts "Handling:\n [join $frames \n]"
-						set jmsg [jmsg::new [list $name {*}$frames]]
-						puts $jmsg
-						} result
-						puts $result
+						puts "Handling $zmq_type:\n[join $frames \n]"
+						if {$zmq_type eq "msg"} {
+							set jmsg [jmsg::new $channel $name $type {*}$frames]
+							on_recv $jmsg
+						} else {
+							# TODO: ignore commands for now
+						}
 						set frames {}
+						set zmq_type {}
 
 					}
 				}
@@ -114,8 +127,7 @@ namespace eval tmq {
 			set rest [string range $data 2 end]
 		} elseif {$first in [list \x02 \x03 \x06]} {
 			if {[string length $data] < 5} {return [list {} $data 0]}
-			binary scan $data cI _ length
-			set lenght [expr { $length & 0xffffffff }]
+			binary scan $data cW _ length
 			set rest [string range $data 5 end]
 		} else {
 			return -code error "Unknown start of frame [display $data]"

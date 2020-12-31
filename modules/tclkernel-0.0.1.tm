@@ -7,8 +7,11 @@ set script [file normalize [info script]]
 set modfile [file root [file tail $script]]
 lassign [split $modfile -] _ modver
 
+interp alias {} pputs {} puts -nonewline
+
+
 set conn {}
-set kernel_id [jmsg::newid]
+set kernel_id tcljupyter-[pid]
 
 array set ports {}
 set sessions {}
@@ -32,44 +35,43 @@ proc connect {connection_file} {
     start [pid]
 }
 
-proc respond {jmsg} {
+proc respond {channel jmsg} {
     variable key
-    variable ports
     variable kernel_id
-    set port [dict get $jmsg port]
     dict with jmsg {
         json set header session $kernel_id
         set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]] 
     }
-
     set zmsg [jmsg::znew $jmsg]
-    # puts "$port [string repeat > 20]"
-    # puts "RESPOND:\n[string range [join $zmsg \n] 0 1200]\n"
+    puts "RESPOND to $channel:\n[string range [join $zmsg \n] 0 1200]\n"
     foreach msg [lrange $zmsg 0 end-1] {
-        $ports($port) sendmore $msg
+         set length [string length $msg]
+         set length_bytes [binary format W $length]
+         pputs $channel \x03$length$msg
+         flush $channel
     }
-    $ports($port) send [lindex $zmsg end]
+    set msg [lindex $zmsg end]
+    set length [string length $msg]
+    set length_bytes [binary format W $length]
+    pputs $channel \x03$length$msg
+    flush $channel
 }
 
-proc on_recv {port zmsg} {
-    variable ports
+proc on_recv {jmsg} {
     variable t
-    set to $t
-    set zmsg [zmsg recv $ports($port)]
-    # puts "\n\n\n\n$port [string repeat < 20]"
-    # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
-    set jmsg [jmsg::new [list $port {*}$zmsg]]
     set session [jmsg::session $jmsg]
-    set type [jmsg::type $jmsg]
-    if {$type eq "kernel_info_request"} {
+    set msg_type [jmsg::msg_type $jmsg]
+    set name [jmsg::name $jmsg]
+    puts "on_recv $jmsg"
+    if {$msg_type eq "kernel_info_request"} {
         handle_info_request $jmsg
         return
     }
-    if {$type eq "comm_info_request"} {
+    if {$msg_type eq "comm_info_request"} {
         # Unsupported
         return
     }
-    if {$port eq "control"} {
+    if {$name eq "control"} {
         handle_control_request $jmsg
         return
     } 
@@ -78,15 +80,17 @@ proc on_recv {port zmsg} {
     # puts $jmsg
 
     # wrap command in a catch to capture and handle interrupt messages
-    thread::send -async $to [list set cmd [list $type $jmsg $to]]
-    thread::send -async $to {
-        lassign $cmd type jmsg to
-        if {[catch {$type $jmsg} result]} {
+    thread::send -async $t [list set cmd [list $msg_type $jmsg $t]]
+    thread::send -async $t {
+        lassign $cmd msg_type jmsg t
+        if {[catch {$msg_type $jmsg} result]} {
             bgerror $jmsg $::errorInfo
             # puts $::errorInfo
         }
     }
 }
+
+
 
 proc start {pid} {
     variable t
@@ -139,6 +143,7 @@ proc handle_control_request {jmsg} {
     variable t
     set ph [dict get $jmsg header]
     set ps [jmsg::session $jmsg]
+    set channel [jmsg::channel $jmsg]
     set msg_type [json get $ph msg_type]
     set reply_type {}
     switch -exact $msg_type {
@@ -156,7 +161,7 @@ proc handle_control_request {jmsg} {
         set parent $ph
         json set header msg_type $reply_type
     }
-    respond $jmsg
+    respond $channel $jmsg
     if {$shutdown} {
         puts "Shutting down kernel [pid]"
         after 0 exit
@@ -164,9 +169,11 @@ proc handle_control_request {jmsg} {
 }
 
 proc handle_info_request {jmsg} {
+    puts "Handling info request: $jmsg"
     variable modver
     set parent [dict get $jmsg header]
-    respond [jmsg::status $parent busy]
+    set channel [dict get $jmsg channel]
+    # respond $channel [jmsg::status $parent busy]
     dict with jmsg {
         set parent $header
         set username [json get $header username]
@@ -178,8 +185,8 @@ proc handle_info_request {jmsg} {
 			"5.3"]
         set content [json template $::kernel_info]
     }
-    respond $jmsg
-    respond [jmsg::status $parent idle]
+    respond $channel $jmsg
+    # respond $channel [jmsg::status $parent idle]
 }
 set kernel_info { {
     "status" : "ok",
