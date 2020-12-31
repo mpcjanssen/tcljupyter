@@ -200,8 +200,8 @@ proc is_complete_request {jmsg} {
 	}
     }
     # puts jmsg=$jmsg
-    respond $jmsg
-    respond [jmsg::status $ph idle]
+    respond shell $jmsg
+    respond iopub [jmsg::status $ph idle]
 }
 
 proc execute_request {jmsg} {
@@ -285,7 +285,7 @@ proc execute_request {jmsg} {
             }
 	    set response [jmsg::newiopub $ph execute_result]
 	    dict with response {
-		set content [execute_result $exec_counter $result]
+		set content [encoding convertto utf-8 [execute_result $exec_counter $result]]
 	    }
 	    respond iopub $response
 	}

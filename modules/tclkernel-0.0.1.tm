@@ -42,8 +42,8 @@ proc respond {name jmsg} {
     variable kernel_id
     dict with jmsg {
         json set header session $kernel_id
-        set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]] 
-        puts "HMAC: calculating for: $header$parent$metadata$content\nHMAC: $hmac\nHMAC: [interp alias {} hmac]"
+        set hmac [hmac "$header$parent$metadata[encoding convertto utf-8 $content]"]
+        puts "HMAC: calculating for: $header$parent$metadata[encoding convertto utf-8 $content]\nHMAC: $hmac\nHMAC: [interp alias {} hmac]"
     }
     set zmsg [jmsg::znew $jmsg]
     if {$name eq "iopub"} {
