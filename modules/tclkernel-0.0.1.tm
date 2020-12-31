@@ -27,6 +27,7 @@ proc connect {connection_file} {
     puts $conn
 
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
+
     listen shell ROUTER
     listen control ROUTER
     listen stdin ROUTER
@@ -120,6 +121,11 @@ proc start {pid} {
     }
 }
 
+
+proc listen_loop port {
+  on_recv $port
+  after 500 [list listen_loop $port]
+}
 
 proc listen {port type} {
     tmq::listen $port $type [address $port] [namespace code [list on_recv $port]]

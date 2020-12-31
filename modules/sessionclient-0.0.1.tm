@@ -222,9 +222,49 @@ proc execute_request {jmsg} {
             }
         }]
     }
-    respond shell $response
-    
-    if {[catch {slave eval $code} result]} {
+    respond iopub $response
+    set lines [split $code \n]
+    set error {}
+    set code {}
+    set magics {timeit 0 timeit_count 1 noresult 0}
+    set expect_magics 1
+    foreach line $lines {
+	set trimmed [string trim $line]
+	if {$expect_magics && [string range $trimmed 0 1] eq {%%}} {
+	   set magic_parts [split $trimmed]
+	   lassign $magic_parts magic_cmd magic_arg1 magic_arg2
+           set magic_cmd [string range $magic_cmd 2 end]
+	   switch -exact $magic_cmd {
+		timeit {
+                    dict set magics timeit 1
+                    if {$magic_arg1 ne {}} {
+                        dict set magics timeit_count $magic_arg1
+                    }
+                }
+                noresult {
+		    dict set magics noresult 1
+                }
+		default {set error "Invalid magic %%$magic_cmd"}
+	   }
+	   continue 
+	} else {
+          set expect_magics 0
+	  lappend code $line
+	}
+    }
+    if {$error ne {}} {
+	slave eval [list puts stderr $error]
+    } 
+    set code [join $code \n]    
+    dict with magics {
+        set time_result [time {
+    	   set error [catch {slave eval $code} result]
+        } $timeit_count]
+    }
+    if {[dict get $magics timeit]} {
+	slave eval [list jupyter::html "<code style='color:green;'>$time_result</code>"]
+    }
+    if {$error} {
         set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
 	json set rcontent ename [json string "Tcl error"]; # error code, if present
 	json set rcontent evalue [json string $result]
@@ -240,9 +280,9 @@ proc execute_request {jmsg} {
 	
     } else {
         if {$result ne {}} {
-        if {[string index [string trim $code] end] eq ";"} {
-            set result {}
-        }
+            if {[dict get $magics noresult]} {
+                set result {}
+            }
 	    set response [jmsg::newiopub $ph execute_result]
 	    dict with response {
 		set content [execute_result $exec_counter $result]

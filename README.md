@@ -13,7 +13,7 @@ Jupyter will use the `kernel.json` file to start the kernel (passing the connect
 
 If you want to try it out without installation you can use the Binder version in the cloud.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/master?filepath=examples%2Fexample.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/binder?filepath=examples%2Fexample.ipynb)
 
 ### Dependencies
 
@@ -51,7 +51,12 @@ Most web client commands are supported. Only thing missing is reading from stdin
    * `jupyter::updatehtml id body`: Updates the html display with id `id` with the new body.
 
 
-If a cell ends with `;` the last result is not displayed.
+### Magic commands
+
+Magics are lines starting with `%%` at the top of the cell.
+
+   * `%%timeit ?count?`: Time the execution of the cell and display the results. Changing count will execute the cell multiple times and show the average time.
+   * `%%noresult`: Do not show the last result. This is convenient if the last result is very large.
 
 ## Test suite
 
