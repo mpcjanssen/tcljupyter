@@ -15,6 +15,14 @@ cd rl_json-binder
 make && make install
 cd ..
 
+
+wget -q https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O tcllib.tar.gz
+tar xf tcllib.tar.gz
+cd tcllib-tcllib-1-20
+./configure --prefix=$PREFIX
+make && make install
+cd ..
+
 export KERNELPATH=$PREFIX/share/jupyter/kernels/tcljupyter
 mkdir -p $KERNELPATH
 
