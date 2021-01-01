@@ -173,9 +173,12 @@ namespace eval tmq {
 					if {$first in "\x00 \x01"} {
 						puts "INFO: PUBSUB handling [display $frame]"
 						yield
+						# Not sure why this read hangs sometimes
+						fconfigure $channel -blocking 0
 						append frame [read $channel 1]
 						set msg_type pubsub
 						puts "INFO: PUBSUB handling done"
+						fconfigure $channel -blocking 1
 					}
 				}
 				lappend frames $frame
