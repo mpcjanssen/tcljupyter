@@ -28,7 +28,7 @@ namespace eval jmsg {
         dict set result metadata $metadata
         dict set result content $content
         dict set result uuid ""
-        puts "JMSG: $result"
+        # puts "JMSG: $result"
         set calc_hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]]
         if {$calc_hmac ne $hmac} {
             return -code error "HMAC mismatch $calc_hmac : $hmac"

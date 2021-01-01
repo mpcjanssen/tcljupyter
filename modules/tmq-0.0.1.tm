@@ -9,28 +9,7 @@ namespace eval tmq {
 	}
 	return $decoded
 	}
-	set insend 0
 	proc send {name zmsg} {
-		variable insend
-		if {$insend} {
-			puts EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-			puts "Nested insend OOOPS"
-			error oops
-		}	
-		set insend 1
-		# Don't kill the client
-		variable lastsend
-		set now [clock milliseconds]
-		if {[info exists lastsend($name)]} {
-			set delta [expr {$now - $lastsend($name) }]
-		} else {
-			set delta 100
-		}
-		# if {$delta < 100} {
-		# 	puts "SLLLOOOOOWWWWWW DOOOOOOWWWWWW"
-		# 	after [expr {100-$delta}]
-		# }
-		set lastsend($name) $now
 		variable ${name}_socket
 		set channel [set ${name}_socket]
 		puts "Sending on $name zmq port ($channel)"
@@ -48,7 +27,7 @@ namespace eval tmq {
 				set prefix \x01	
 			}
 			set length_bytes [binary format $format $length]
-			puts [display $prefix$length_bytes$msg]
+			# puts [display [string range $prefix$length_bytes$msg 0 200]]
 			pputs $channel $prefix$length_bytes$msg
 			flush $channel
 		}
@@ -62,10 +41,9 @@ namespace eval tmq {
 			set prefix \x00	
 		}
 		set length_bytes [binary format $format $length]
-		puts [display $prefix$length_bytes$msg]
+		# puts [display [string range $prefix$length_bytes$msg 0 200]]
 		pputs $channel $prefix$length_bytes$msg
 		flush $channel
-		set insend 0
 	}
 
 	set greeting [binary decode hex [join [subst {
@@ -187,8 +165,8 @@ namespace eval tmq {
 				}
 				yield
 				set frame [read $channel $bytelength]
-				puts "INFO: << [display $prefix$length$frame]"
-				puts "INFO: Frame length $bytelength"
+				#puts "INFO: << [display $prefix$length[string range $frame 0 100]]"
+				#puts "INFO: Frame length $bytelength"
 				# Handle sub/unsub messages
 				if {$type in "PUB SUB" && [string bytelength $frame] > 0} {
 					set first [string index $frame 0]
@@ -202,7 +180,7 @@ namespace eval tmq {
 				}
 				lappend frames $frame
 			}
-			puts "<<<< $name ($channel:$port:$zmsg_type):\n[display \n[join $frames \n]]"
+			puts "<<<< $name ($channel:$port:$zmsg_type)"
 			flush stdout
 			if {$zmsg_type eq "msg"} {
 				set delimiter ""
