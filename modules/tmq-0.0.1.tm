@@ -104,7 +104,7 @@ namespace eval tmq {
 	    variable greeting
 	    variable ready
 		fconfigure $channel -blocking 1 -encoding binary -translation binary
-
+		yield
 		puts "Incoming $type connection"
 		# Negotiate version
 		pputs $channel [string range $greeting 0 10]
@@ -128,18 +128,17 @@ namespace eval tmq {
 		pputs $channel $zmsg
 		flush $channel
 
-		yield
-		if {$type eq "PUB"} {
 
-		}
 		while {1} {
 			# readable read the complete message
 			set more 1
 			set frames {}		
 			while {$more} {
-
+				yield
 				set prefix [read $channel 1]
-				if {[eof $channel]} return
+				if {[eof $channel]} {
+					return -code error "ERROR: Channel $channel closed" 
+				}
 
 				switch -exact $prefix {
 					\x00 {
@@ -177,6 +176,7 @@ namespace eval tmq {
 						return -code error "ERROR: Unknown frame start [display $prefix]" 
 					}
 				}
+				yield
 				if {$size eq "short"} {
 					set length [read $channel 1]
 					binary scan $length c bytelength
@@ -185,6 +185,7 @@ namespace eval tmq {
 					set length [read $channel 8]  
 					binary scan $length W  bytelength
 				}
+				yield
 				set frame [read $channel $bytelength]
 				puts "INFO: << [display $prefix$length$frame]"
 				puts "INFO: Frame length $bytelength"
