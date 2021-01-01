@@ -10,12 +10,9 @@ namespace eval tmq {
 	return $decoded
 	}
 
+
 	proc sendchannel {name bytes} {
 		variable channels
-		if {$channels($name) ni [chan names]} {
-			puts "ERROR: channel $channels($name) is gone"
-			return
-		}
 		if {[catch {
 			set channel $channels($name)
 			puts -nonewline $channel $bytes
@@ -27,15 +24,12 @@ namespace eval tmq {
 			}
 			flush $channel
 		} result]} {
-			puts "ERROR: could not send to channel $name\n$result"
+			puts "ERROR: could not send to channel $name"
+			
 		}
 	}
 
 	proc send {name zmsg} {
-
-
-
-		
 		# on the wire format is UTF-8
 		set zmsg [lmap m $zmsg {encoding convertto utf-8 $m}]
 
