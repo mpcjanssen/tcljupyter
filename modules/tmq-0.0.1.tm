@@ -194,6 +194,7 @@ namespace eval tmq {
 				on_recv $jmsg
 			} else {
 				# TODO: ignore commands and pubsub for now
+				puts "WARN: Ignoring zmq command\n[display [join $frames \n]]\n"
 			}
 			yield
 		}	
