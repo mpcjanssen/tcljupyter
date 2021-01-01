@@ -7,8 +7,6 @@ set script [file normalize [info script]]
 set modfile [file root [file tail $script]]
 lassign [split $modfile -] _ modver
 
-interp alias {} pputs {} puts -nonewline
-
 
 set conn {}
 set kernel_id  [uuid::uuid generate]
@@ -51,7 +49,7 @@ proc respond {name jmsg} {
         set zmsg [linsert $zmsg 0 $msg_type]
     }
     # puts "RESPOND to $name:"
-    if {[catch {tmq::send $name $zmsg}]} {exit -1}
+    tmq::send $name $zmsg
 }
 
 proc on_recv {jmsg} {
@@ -119,12 +117,6 @@ proc start {pid} {
             }
         }
     }
-}
-
-
-proc listen_loop port {
-  on_recv $port
-  after 500 [list listen_loop $port]
 }
 
 proc listen {port type} {

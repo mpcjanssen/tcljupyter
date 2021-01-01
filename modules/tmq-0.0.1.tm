@@ -9,11 +9,33 @@ namespace eval tmq {
 	}
 	return $decoded
 	}
-	proc send {name zmsg} {
-		variable ${name}_socket
-		set channel [set ${name}_socket]
-		puts "Sending on $name zmq port ($channel)"
 
+	proc sendchannel {name bytes} {
+		variable channels
+		if {$channels($name) ni [chan names]} {
+			puts "ERROR: channel $channels($name) is gone"
+			return
+		}
+		if {[catch {
+			set channel $channels($name)
+			puts -nonewline $channel $bytes
+			if {[eof $channel]} {
+				# Remote closed
+				puts "WARN: Remote was closed"
+				close $channel
+				return 0
+			}
+			flush $channel
+		} result]} {
+			puts "ERROR: could not send to channel $name\n$result"
+		}
+	}
+
+	proc send {name zmsg} {
+
+
+
+		
 		# on the wire format is UTF-8
 		set zmsg [lmap m $zmsg {encoding convertto utf-8 $m}]
 
@@ -28,8 +50,7 @@ namespace eval tmq {
 			}
 			set length_bytes [binary format $format $length]
 			# puts [display [string range $prefix$length_bytes$msg 0 200]]
-			pputs $channel $prefix$length_bytes$msg
-			flush $channel
+			sendchannel $name $prefix$length_bytes$msg
 		}
 		set msg [lindex $zmsg end]
 		set length [string length $msg]
@@ -42,8 +63,7 @@ namespace eval tmq {
 		}
 		set length_bytes [binary format $format $length]
 		# puts [display [string range $prefix$length_bytes$msg 0 200]]
-		pputs $channel $prefix$length_bytes$msg
-		flush $channel
+		sendchannel $name $prefix$length_bytes$msg
 	}
 
 	set greeting [binary decode hex [join [subst {
@@ -66,13 +86,11 @@ namespace eval tmq {
 	}
 
 	proc connection {name type address s ip port} {
+		variable channels
 		puts "Incoming connection from $s ($ip:$port) on $address ($type) "
 		dict with address {
-			variable ${channel}_socket 
-			set ${channel}_socket $s
+			set channels($name) $s
 		}
-		set context $address
-
 
 		coroutine ::tmq_$s handle $name $port [string toupper $type] $s
 		fileevent $s readable ::tmq_$s
@@ -85,13 +103,11 @@ namespace eval tmq {
 		yield
 		puts "Incoming $type connection"
 		# Negotiate version
-		pputs $channel [string range $greeting 0 10]
-		flush $channel
+		sendchannel $name [string range $greeting 0 10]
 		set remote_greeting [read $channel 11]
 		puts "Remote greeting [display $remote_greeting]"
 	    # Send rest of greeting
-		pputs $channel [string range $greeting 11 end]
-		flush $channel
+		sendchannel $name [string range $greeting 11 end]
 		append remote_greeting [read $channel [expr {64-11}]]
 
 
@@ -103,8 +119,7 @@ namespace eval tmq {
 		} 
 		set zmsg [zlen $msg]$msg
 		# puts ">>>> $name ($port:$type)\n[display $zmsg]"
-		pputs $channel $zmsg
-		flush $channel
+		sendchannel $name $zmsg
 
 
 		while {1} {
