@@ -4,14 +4,20 @@ namespace eval tmq {
 
 		foreach x [split $data ""] {
     	binary scan $x c d 
-    	if {$d > 31 && $d < 127} {append decoded $x} else {append decoded \\x[binary encode hex $x]}
+    	if {$d < 32 || $d > 126 }  {append decoded \\x[binary encode hex $x]} {append decoded $x}
 		
 	}
 	return $decoded
 	}
-
+	set insend 0
 	proc send {name zmsg} {
-
+		variable insend
+		if {$insend} {
+			puts EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+			puts "Nested insend OOOPS"
+			error oops
+		}	
+		set insend 1
 		# Don't kill the client
 		variable lastsend
 		set now [clock milliseconds]
@@ -44,6 +50,7 @@ namespace eval tmq {
 			set length_bytes [binary format $format $length]
 			puts [display $prefix$length_bytes$msg]
 			pputs $channel $prefix$length_bytes$msg
+			flush $channel
 		}
 		set msg [lindex $zmsg end]
 		set length [string length $msg]
@@ -58,6 +65,7 @@ namespace eval tmq {
 		puts [display $prefix$length_bytes$msg]
 		pputs $channel $prefix$length_bytes$msg
 		flush $channel
+		set insend 0
 	}
 
 	set greeting [binary decode hex [join [subst {
@@ -95,113 +103,120 @@ namespace eval tmq {
 	proc handle {name port type channel} {
 	    variable greeting
 	    variable ready
+		fconfigure $channel -blocking 1 -encoding binary -translation binary
 
 		puts "Incoming $type connection"
-		fconfigure $channel -blocking 1 -encoding binary
 		# Negotiate version
 		pputs $channel [string range $greeting 0 10]
 		flush $channel
 		set remote_greeting [read $channel 11]
+		puts "Remote greeting [display $remote_greeting]"
 	    # Send rest of greeting
 		pputs $channel [string range $greeting 11 end]
 		flush $channel
 		append remote_greeting [read $channel [expr {64-11}]]
 
-		puts "Remote greeting [display $remote_greeting]"
+
 		# Send the ready command
 
 		set msg \x05READY\x0bSocket-Type[len32 $type]$type
 		if {$type eq "ROUTER"} {
 			append msg \x08Identity[len32 ""]
-		}
+		} 
 		set zmsg [zlen $msg]$msg
-		puts ">>>> $name ($port:$type)\n[display $zmsg]"
+		# puts ">>>> $name ($port:$type)\n[display $zmsg]"
 		pputs $channel $zmsg
-		flush $channel 
-			
-		fconfigure $channel  -blocking 0 -encoding binary
+		flush $channel
+
 		yield
-		set data {}
-		set frames {}
-		set zmq_type {}
+		if {$type eq "PUB"} {
+
+		}
 		while {1} {
-			set part [read $channel]
-			append data $part
-			puts "<<<< $name ($channel:$port:$type)\n[display $part]"
-			if {[eof $channel]} {close $channel ; return}
-			set frame_read 1
-		    while {$frame_read && $data ne {}} {
-					if {$data ne {} && $zmq_type eq {}} {
-					set first [string index $data 0]
-					if {$first in [list \x04 \x06]} {
-						set zmq_type cmd
-					} else {
-						set zmq_type msg
+			# readable read the complete message
+			set more 1
+			set frames {}		
+			while {$more} {
+
+				set prefix [read $channel 1]
+				if {[eof $channel]} return
+
+				switch -exact $prefix {
+					\x00 {
+						set zmsg_type msg
+						set more 0
+						set size short
+					}	
+					\x01 {
+						set zmsg_type msg
+						set more 1
+						set size short
+					}
+					\x02 {
+						set zmsg_type msg
+						set more 0
+						set size long
+					}	
+					\x03 {
+						set zmsg_type msg
+						set more 1
+						set size long
+					}
+					\x04 {
+						set zmsg_type cmd
+						set more 0
+						set size short
+					}	
+					\x06 {
+						set zmsg_type cmd
+						set more 0
+						set size long
+					}
+					default {
+						close $channel
+						return -code error "ERROR: Unknown frame start [display $prefix]" 
 					}
 				}
-				lassign [read_frame $data] frame data last
-				if {$frame eq {}} {
-					puts "No more frames to read for now"
-					set frame_read 0
+				if {$size eq "short"} {
+					set length [read $channel 1]
+					binary scan $length c bytelength
+					set bytelength [expr { $bytelength & 0xff }] 
 				} {
-					lappend frames $frame
-					if {$last} {
-						if {[catch {
-							puts "Handling $zmq_type:\n[join $frames \n]"
-							flush stdout
-							if {$zmq_type eq "msg"} {
-								set jmsg [jmsg::new $channel $name $type {*}$frames]
-								on_recv $jmsg
-							} else {
-								# TODO: ignore commands for now
-							}
-						}]} {
-							puts "ERROR handling\n\n[join $frames \n]"
-						}
-						set frames {}
-						set zmq_type {}
-
+					set length [read $channel 8]  
+					binary scan $length W  bytelength
+				}
+				set frame [read $channel $bytelength]
+				puts "INFO: << [display $prefix$length$frame]"
+				puts "INFO: Frame length $bytelength"
+				# Handle sub/unsub messages
+				if {$type in "PUB SUB" && [string bytelength $frame] > 0} {
+					set first [string index $frame 0]
+					if {$first in "\x00 \x01"} {
+						puts "INFO: PUBSUB handling [display $frame]"
+						yield
+						append frame [read $channel 1]
+						set msg_type pubsub
+						puts "INFO: PUBSUB handling done"
 					}
 				}
-
+				lappend frames $frame
+			}
+			puts "<<<< $name ($channel:$port:$zmsg_type):\n[display \n[join $frames \n]]"
+			flush stdout
+			if {$zmsg_type eq "msg"} {
+				set delimiter ""
+				while {$delimiter ne {<IDS|MSG>}} {
+					set frames [lassign $frames delimiter]
+				}
+				set jmsg [jmsg::new $channel $name $type $delimiter {*}$frames]
+				on_recv $jmsg
+			} else {
+				# TODO: ignore commands and pubsub for now
 			}
 			yield
-		}
+		}	
 	}
 	
-	proc read_frame {data} {
-		# puts [display $data]
-		set first [string index $data 0]
-		if {$first in [list \x00 \x01 \x04]} {
-			if {[string length $data] < 2} {return [list {} $data 0]}
-			binary scan $data cc _ length
-			set length [expr { $length & 0xff }]
-			set rest [string range $data 2 end]
-		} elseif {$first in [list \x02 \x03 \x06]} {
-			if {[string length $data] < 5} {return [list {} $data 0]}
-			binary scan $data cW _ length
-			set rest [string range $data 9 end]
-		} else {
-			return -code error "Unknown start of frame [display $data]"
-		}
-		puts "$length < [string length $rest] ?"
-		if {[string length $rest] < $length} {
-			return [list {} $data 0]
-		}
-		set frame [string range $rest 0 $length-1]
-		# puts "Got: [display $frame]"
-		set data [string range $rest $length end]
-		# puts "Last frame? [display $first]"
-		if {$first ni [list \x01 \x03]} {
-			# puts "Yes last"
-			# last frame
-			return [list $frame $data 1]
-		} else {
-			return [list $frame $data 0]
-		}
-
-	}
-
 	proc handle_command data {
 		return {1 {}}
 
