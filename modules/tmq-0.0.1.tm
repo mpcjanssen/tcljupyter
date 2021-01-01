@@ -165,8 +165,8 @@ namespace eval tmq {
 				}
 				yield
 				set frame [read $channel $bytelength]
-				puts "INFO: << [display $prefix$length[string range $frame 0 100]]"
-				puts "INFO: Frame length $bytelength"
+				# puts "INFO: << [display $prefix$length[string range $frame 0 100]]"
+				# puts "INFO: Frame length $bytelength"
 				lappend frames $frame
 			}
 			puts "<<<< $name ($channel:$port:$zmsg_type)"
@@ -207,8 +207,5 @@ namespace eval tmq {
 	proc len8 {str} {
 			return [binary format c [string length $str]]
 	}
-
-
-
 }
 
