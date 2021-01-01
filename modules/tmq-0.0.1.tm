@@ -165,33 +165,21 @@ namespace eval tmq {
 				}
 				yield
 				set frame [read $channel $bytelength]
-				#puts "INFO: << [display $prefix$length[string range $frame 0 100]]"
-				#puts "INFO: Frame length $bytelength"
-				# Handle sub/unsub messages
-				if {$type in "PUB SUB" && [string bytelength $frame] > 0} {
-					set first [string index $frame 0]
-					if {$first in "\x00 \x01"} {
-						puts "INFO: PUBSUB handling [display $frame]"
-						yield
-						# Not sure why this read hangs sometimes
-						fconfigure $channel -blocking 0
-						append frame [read $channel 1]
-						set msg_type pubsub
-						puts "INFO: PUBSUB handling done"
-						fconfigure $channel -blocking 1
-					}
-				}
+				puts "INFO: << [display $prefix$length[string range $frame 0 100]]"
+				puts "INFO: Frame length $bytelength"
 				lappend frames $frame
 			}
 			puts "<<<< $name ($channel:$port:$zmsg_type)"
 			flush stdout
 			if {$zmsg_type eq "msg"} {
-				set delimiter ""
-				while {$delimiter ne {<IDS|MSG>}} {
-					set frames [lassign $frames delimiter]
+				# is this a Jupyter msg?
+				set index [lsearch $frames "<IDS|MSG>"]
+				if {$index != -1} {
+					set jmsg [jmsg::new $channel $name $type {*}[lrange $frames $index end]]
+					on_recv $jmsg
+				} {
+					puts "WARN: Ignoring no jupyter zmq msg\n[display [join $frames \n]]\n"	
 				}
-				set jmsg [jmsg::new $channel $name $type $delimiter {*}$frames]
-				on_recv $jmsg
 			} else {
 				# TODO: ignore commands and pubsub for now
 				puts "WARN: Ignoring zmq command\n[display [join $frames \n]]\n"

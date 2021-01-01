@@ -1,0 +1,10 @@
+  "shell_port": 54481,
+  "iopub_port": 46929,
+  "stdin_port": 43255,
+  "control_port": 39379,
+  "hb_port": 33225,
+  "ip": "127.0.0.1",
+  "key": "b2a5dcd7-5c0aaa55d958a955527b62e1",
+  "transport": "tcp",
+  "signature_scheme": "hmac-sha256",
+  "kernel_name": "tmq"
