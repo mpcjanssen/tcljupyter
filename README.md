@@ -13,14 +13,16 @@ Jupyter will use the `kernel.json` file to start the kernel (passing the connect
 
 If you want to try it out without installation you can use the Binder version in the cloud.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/binder?filepath=examples%2Fexample.ipynb)
+- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/binder?filepath=examples%2Fexample.ipynb) (with binary zmq library)
+- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/tclonly?filepath=examples%2Fexample.ipynb) (with Tcl zmq)
+
 
 ### Dependencies
 
 The Tcl used to run the `init.tcl` script should have the following available:
 
 - Tcl 8.6 with threads
-- [tclzmq](https://github.com/jdc8/tclzmq) 
+- [tclzmq](https://github.com/jdc8/tclzmq) (Not for the tclonly version) 
 - [rl_json](https://github.com/RubyLane/rl_json) 0.11.0 or higher
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) uuid
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) sha256
