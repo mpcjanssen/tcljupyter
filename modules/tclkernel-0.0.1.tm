@@ -21,7 +21,7 @@ proc connect {connection_file} {
     set conn [read $f]
     set key [json get $conn key]
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
-    zmq context context
+    zmq context context -io_threads 2
     starthb
     set ports(iopub) [zmq socket context PUB]
     $ports(iopub) bind [address iopub]
@@ -140,7 +140,7 @@ proc starthb {} {
 
 proc listen_loop port {
   on_recv $port
-  after 500 [list listen_loop $port]
+  after 50 [list listen_loop $port]
 }
 
 proc listen {port type} {
