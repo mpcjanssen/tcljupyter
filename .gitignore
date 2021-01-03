@@ -1,3 +1,5 @@
 kernel.json
 .ipynb_checkpoints/
 src/
+*.swp
+*~

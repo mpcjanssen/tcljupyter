@@ -57,7 +57,7 @@ proc on_recv {jmsg} {
     set session [jmsg::session $jmsg]
     set msg_type [jmsg::msg_type $jmsg]
     set name [jmsg::name $jmsg]
-    puts "on_recv $jmsg"
+    # puts "on_recv $jmsg"
     if {$msg_type eq "kernel_info_request"} {
         handle_info_request $jmsg
         return
@@ -163,7 +163,7 @@ proc handle_control_request {jmsg} {
 }
 
 proc handle_info_request {jmsg} {
-    puts "Handling info request: $jmsg"
+    # puts "Handling info request: $jmsg"
     variable modver
     set parent [dict get $jmsg header]
     set channel [dict get $jmsg channel]

@@ -1,10 +1,14 @@
 namespace eval tmq {
-	proc display {data} {
+	proc display {data {showascii 0}} {
 		set decoded {}
 
 		foreach x [split $data ""] {
     	binary scan $x c d 
-    	if {$d < 32 || $d > 126 }  {append decoded \\x[binary encode hex $x]} {append decoded $x}
+    	if {$d < 32 || $d > 126 || !$showascii}  {
+		append decoded \\x[binary encode hex $x]
+	} {
+		append decoded $x
+	}
 		
 	}
 	return $decoded
@@ -15,13 +19,13 @@ namespace eval tmq {
 		variable channels
 		if {[catch {
 			set channel $channels($name)
-			puts -nonewline $channel $bytes
 			if {[eof $channel]} {
 				# Remote closed
 				puts "WARN: Remote was closed"
 				close $channel
 				return 0
 			}
+			puts -nonewline $channel $bytes
 			flush $channel
 		} result]} {
 			puts "ERROR: could not send to channel $name"
@@ -31,6 +35,7 @@ namespace eval tmq {
 
 	proc send {name zmsg} {
 		# on the wire format is UTF-8
+		puts ">>>> $name"
 		set zmsg [lmap m $zmsg {encoding convertto utf-8 $m}]
 
 		foreach msg [lrange $zmsg 0 end-1] {
@@ -99,7 +104,7 @@ namespace eval tmq {
 		# Negotiate version
 		sendchannel $name [string range $greeting 0 10]
 		set remote_greeting [read $channel 11]
-		puts "Remote greeting [display $remote_greeting]"
+		# puts "Remote greeting [display $remote_greeting]"
 	    # Send rest of greeting
 		sendchannel $name [string range $greeting 11 end]
 		append remote_greeting [read $channel [expr {64-11}]]
@@ -124,7 +129,9 @@ namespace eval tmq {
 				yield
 				set prefix [read $channel 1]
 				if {[eof $channel]} {
-					return -code error "ERROR: Channel $channel closed" 
+					puts "ERROR: Channel $channel closed" 
+					fileevent $channel readable {}
+					return
 				}
 
 				switch -exact $prefix {
@@ -160,7 +167,7 @@ namespace eval tmq {
 					}
 					default {
 						close $channel
-						return -code error "ERROR: Unknown frame start [display $prefix]" 
+						return -code error "ERROR: Unknown frame start [display $prefix 0]" 
 					}
 				}
 				yield
@@ -187,11 +194,11 @@ namespace eval tmq {
 					set jmsg [jmsg::new $channel $name $type {*}[lrange $frames $index end]]
 					on_recv $jmsg
 				} {
-					puts "WARN: Ignoring no jupyter zmq msg\n[display [join $frames \n]]\n"	
+					puts "WARN: Ignoring non-Jupyter zmq msg\n[display [join $frames \n] 1]\n"	
 				}
 			} else {
-				# TODO: ignore commands and pubsub for now
-				puts "WARN: Ignoring zmq command\n[display [join $frames \n]]\n"
+				# TODO: ignore zmq commands and pubsub for now
+				puts "WARN: Ignoring zmq command\n[display [join $frames \n] 1]\n"
 			}
 			yield
 		}	
