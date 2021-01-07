@@ -279,10 +279,7 @@ proc execute_request {jmsg} {
 	json set rcontent status [json string "error"]
 	
     } else {
-        if {$result ne {}} {
-            if {[dict get $magics noresult]} {
-                set result {}
-            }
+        if {$result ne {} && ![dict get $magics noresult]} {
 	    set response [jmsg::newiopub $ph execute_result]
 	    dict with response {
 		set content [execute_result $exec_counter $result]
