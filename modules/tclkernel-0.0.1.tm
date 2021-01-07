@@ -31,7 +31,7 @@ proc connect {connection_file} {
     start [pid]
 }
 
-proc respond {jmsg} {
+proc respond_body {jmsg} {
     variable key
     variable ports
     variable kernel_id
@@ -48,6 +48,10 @@ proc respond {jmsg} {
         $ports($port) sendmore $msg
     }
     $ports($port) send [lindex $zmsg end]
+}
+
+proc respond {jmsg} {
+    after 0 [list respond_body $jmsg]
 }
 
 proc on_recv {port} {
