@@ -28,7 +28,7 @@ namespace eval tmq {
 			puts -nonewline $channel $bytes
 			flush $channel
 		} result]} {
-			puts "ERROR: could not send to channel $name"
+			puts "ERROR: could not send to channel $name\n$result"
 			
 		}
 	}
@@ -86,20 +86,19 @@ namespace eval tmq {
 
 	proc connection {name type address s ip port} {
 		variable channels
-		puts "Incoming connection from $s ($ip:$port) on $address ($type) "
-		dict with address {
-			set channels($name) $s
-		}
+		puts "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\nIncoming connection from $s ($ip:$port) on $address ($type) "
 
+		set channels($name) $s
+		negotiate $name $port [string toupper $type] $s
 		coroutine ::tmq_$s handle $name $port [string toupper $type] $s
 		fileevent $s readable ::tmq_$s
+
 	}
 
-	proc handle {name port type channel} {
+	proc negotiate {name port type channel} {
 	    variable greeting
 	    variable ready
 		fconfigure $channel -blocking 1 -encoding binary -translation binary
-		yield
 		puts "Incoming $type connection"
 		# Negotiate version
 		sendchannel $name [string range $greeting 0 10]
@@ -119,7 +118,11 @@ namespace eval tmq {
 		set zmsg [zlen $msg]$msg
 		# puts ">>>> $name ($port:$type)\n[display $zmsg]"
 		sendchannel $name $zmsg
+		
 
+	}
+
+	proc handle {name port type channel} {
 
 		while {1} {
 			# readable read the complete message
