@@ -5,7 +5,8 @@ namespace eval tmq {
         set socket_id 0
 
         proc socketcmd {zsocket socket cmd args} {
-             puts "Handling socket command $zsocket $cmd $args"
+             lassign $args frames
+             sendzmsg $socket msg $frames
         }
 
         proc serve {type port alias callback} {
@@ -118,7 +119,7 @@ namespace eval tmq {
                         puts "$socket >>> [display $zframe]"
 			puts -nonewline $socket $zframe
 		}
-		set frame [lindex $zmsg end]
+		set frame [lindex $frames end]
                 set zframe [zframe msg-last $frame]
                 puts "$socket >>> [display $zframe]"
 		puts -nonewline $socket $zframe

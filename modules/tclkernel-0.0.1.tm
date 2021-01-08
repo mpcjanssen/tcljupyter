@@ -1,6 +1,7 @@
 package require tmq
 package require rl_json
 package require sha256
+package require jmsg
 
 namespace import rl_json::json
 
@@ -23,25 +24,12 @@ proc connect {connection_file} {
     vwait forever
 }
 
-proc checkhmac {hmac header parent metadata content} {
-        set calc_hmac [hmac "$header$parent$metadata$content"]
-        if {$calc_hmac ne $hmac} {
-            return -code error "HMAC mismatch $calc_hmac : $hmac"
-        }
-}
 
 proc recv_shell {zsocket frames} {
-     puts "shell: $zsocket << [join [tmq::display $frames] \n]"
-     set index [lsearch $frames "<IDS|MSG>"]
-     if {$index != -1} {
-	set frames [lrange $frames $index end]
-     } else {
-       return -code error "Can't find Jupyter delimiter"
-     }
-     lassign $frames delimiter hmac header parentheader metadata content
-     checkhmac $hmac $header $parentheader $metadata $content
-     $zsocket send
-
+     set jmsg [jmsg::new $frames]
+     set msgtype [jmsg::msgtype $jmsg]
+     puts "shell: $zsocket ($msgtype) << $jmsg"
+     handle_$msgtype $zsocket $jmsg
 }
 
 
@@ -53,7 +41,7 @@ proc recv_iopub {zsocket zmsg} {
      puts "iopub: $zsocket << [tmq::display $zmsg]"
 }
 
-proc handle_info_request {zsocket jmsg} {
+proc handle_kernel_info_request {zsocket jmsg} {
     # puts "Handling info request: $jmsg"
     variable modver
     set parent [dict get $jmsg header]
@@ -68,7 +56,9 @@ proc handle_info_request {zsocket jmsg} {
 			"5.3"]
         set content [json template $::kernel_info]
     }
-    respond shell $jmsg
+    set frames [jmsg::frames $jmsg]
+    $zsocket send $frames
+    # respond shell $jmsg
 }
 set kernel_info { {
     "status" : "ok",
