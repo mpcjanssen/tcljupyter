@@ -158,7 +158,7 @@ proc handle_control_request {jmsg} {
     respond control $jmsg
     if {$shutdown} {
         puts "Shutting down kernel [pid]"
-        after 0 exit
+        exit
     }
 }
 

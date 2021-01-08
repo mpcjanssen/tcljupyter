@@ -109,27 +109,18 @@ namespace eval tmq {
 		append remote_greeting [read $channel [expr {64-11}]]
 
 
-		# Send the ready command
-
-		set msg \x05READY\x0bSocket-Type[len32 $type]$type
-		if {$type eq "ROUTER"} {
-			append msg \x08Identity[len32 ""]
-		} 
-		set zmsg [zlen $msg]$msg
-		# puts ">>>> $name ($port:$type)\n[display $zmsg]"
-		sendchannel $name $zmsg
 		
 
 	}
 
 	proc handle {name port type channel} {
+		yield
 
 		while {1} {
 			# readable read the complete message
 			set more 1
 			set frames {}		
 			while {$more} {
-				yield
 				set prefix [read $channel 1]
 				if {[eof $channel]} {
 					puts "ERROR: Channel $channel closed" 
@@ -173,7 +164,6 @@ namespace eval tmq {
 						return -code error "ERROR: Unknown frame start [display $prefix 0]" 
 					}
 				}
-				yield
 				if {$size eq "short"} {
 					set length [read $channel 1]
 					binary scan $length c bytelength
@@ -182,10 +172,9 @@ namespace eval tmq {
 					set length [read $channel 8]  
 					binary scan $length W  bytelength
 				}
-				yield
 				set frame [read $channel $bytelength]
-				# puts "INFO: << [display $prefix$length[string range $frame 0 100]]"
-				# puts "INFO: Frame length $bytelength"
+				puts "INFO: << [display $prefix$length$frame] 1]"
+				puts "INFO: Frame length $bytelength"
 				lappend frames $frame
 			}
 			puts "<<<< $name ($channel:$port:$zmsg_type)"
@@ -201,8 +190,19 @@ namespace eval tmq {
 				}
 			} else {
 				# TODO: ignore zmq commands and pubsub for now
+		# Send the ready command
+		set first [lindex $frames 0]
+		if {[string range $first 0 5] eq "\x05READY"} {
+		set msg \x05READY\x0bSocket-Type[len32 $type]$type
+		if {$type ne "ROUTER"} {
+			append msg \x08Identity[len32 ""]
+		} 
+		set zmsg [zlen $msg]$msg
+		# puts ">>>> $name ($port:$type)\n[display $zmsg]"
+		sendchannel $name $zmsg
+		} {
 				puts "WARN: Ignoring zmq command\n[display [join $frames \n] 1]\n"
-			}
+			} }
 			yield
 		}	
 	}
