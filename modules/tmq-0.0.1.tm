@@ -1,16 +1,22 @@
 namespace eval tmq {
-        # namespace for connection handlers
+        # namespace for connection handlers and socket aliases
         namespace eval coro {}
+        namespace eval socket {}
         set socket_id 0
-        proc serve {type port alias} {
+
+        proc socketcmd {zsocket socket cmd args} {
+             puts "Handling socket command $zsocket $cmd $args"
+        }
+
+        proc serve {type port alias callback} {
              variable socket_id
-             set type [string tolower $type]
              puts "Serving $type on $port"
              set zsocket [namespace current]::[incr socket_id]
-             socket -server [namespace code [list connection $type $zsocket $alias]] $port
+             socket -server [namespace code [list connection $type $zsocket $alias $callback]] $port
+
              return $zsocket
         }
-        proc connection {type zsocket alias socket remoteip remoteport} {
+        proc connection {type zsocket alias callback socket remoteip remoteport} {
              puts "Incoming connection on $alias: $zsocket ($type)"
              puts "Negotiating version"
              set greeting [binary decode hex [join [subst {
@@ -27,12 +33,13 @@ namespace eval tmq {
              set remotegreeting [read $socket 64]
              puts "$zsocket <<< [display $remotegreeting]"
              set coroname ::tmq::coro::$socket
-             coroutine $coroname recv_$type $zsocket $socket $alias
+             coroutine $coroname recv_$type $zsocket $socket $alias $callback
 	     fileevent $socket readable $coroname
+             interp alias {} $zsocket {} ::tmq::socketcmd $zsocket $socket
 
         }
         # coroutine to handle incoming router connections
-        proc recv_router {zsocket socket alias} {
+        proc recv_router {zsocket socket alias callback} {
              yield
              puts "$alias: $zsocket ROUTER handshake"
              lassign [readzmsg $socket] zmsgtype zmsg
@@ -41,13 +48,15 @@ namespace eval tmq {
              yield
              while 1 {
                  lassign [readzmsg $socket] zmsgtype zmsg
-                 puts "$alias: $zsocket <<< [display $zmsg]"
+                 if {$zmsgtype eq "msg"} {
+                    {*}$callback $zsocket $zmsg
+                 }
                  yield
              }
 
         }
         # coroutine to handle incoming router connections
-        proc recv_pub {zsocket socket alias} {
+        proc recv_pub {zsocket socket alias callback} {
              yield
              puts "$alias: $zsocket PUB handshake"
              lassign [readzmsg $socket] zmsgtype zmsg
@@ -55,9 +64,10 @@ namespace eval tmq {
              sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[len32 PUB]PUB\x08Identity[len32 ""]]
              yield
              while 1 {
-                   lassign [readzmsg $socket] zmsgtype zmsg
-                   puts "$alias: $zsocket <<< [display $zmsg]"
-                   yield
+                 if {$zmsgtype eq "msg"} {
+                    {*}$callback $zsocket $zmsg
+                 }
+                 yield
              }
 
         }
