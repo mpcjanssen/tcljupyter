@@ -1,130 +1,128 @@
 namespace eval tmq {
-	proc display {data {showascii 0}} {
-		set decoded {}
-
-		foreach x [split $data ""] {
-    	binary scan $x c d 
-    	if {$d < 32 || $d > 126 || !$showascii}  {
-		append decoded \\x[binary encode hex $x]
-	} {
-		append decoded $x
-	}
-		
-	}
-	return $decoded
-	}
-
-
-	proc sendchannel {name bytes} {
-		variable channels
-		if {[catch {
-			set channel $channels($name)
-			if {[eof $channel]} {
-				# Remote closed
-				puts "WARN: Remote was closed"
-				close $channel
-				return 0
-			}
-			puts -nonewline $channel $bytes
-			flush $channel
-		} result]} {
-			puts "ERROR: could not send to channel $name\n$result"
-			
-		}
-	}
-
-	proc send {name zmsg} {
-		# on the wire format is UTF-8
-		puts ">>>> $name"
-		set zmsg [lmap m $zmsg {encoding convertto utf-8 $m}]
-
-		foreach msg [lrange $zmsg 0 end-1] {
-			set length [string length $msg]
-			if {$length > 255} {
-				set format W
-				set prefix \x03
-			} else {
-				set format c
-				set prefix \x01	
-			}
-			set length_bytes [binary format $format $length]
-			# puts [display [string range $prefix$length_bytes$msg 0 200]]
-			sendchannel $name $prefix$length_bytes$msg
-		}
-		set msg [lindex $zmsg end]
-		set length [string length $msg]
-		if {$length > 255} {
-			set format W
-			set prefix \x02
-		} else {
-			set format c
-			set prefix \x00	
-		}
-		set length_bytes [binary format $format $length]
-		# puts [display [string range $prefix$length_bytes$msg 0 200]]
-		sendchannel $name $prefix$length_bytes$msg
-	}
-
-	set greeting [binary decode hex [join [subst {
-		ff00000000000000017f
-		03
-		00
+        # namespace for connection handlers
+        namespace eval coro {}
+        set socket_id 0
+        proc serve {type port alias} {
+             variable socket_id
+             set type [string tolower $type]
+             puts "Serving $type on $port"
+             set zsocket [namespace current]::[incr socket_id]
+             socket -server [namespace code [list connection $type $zsocket $alias]] $port
+             return $zsocket
+        }
+        proc connection {type zsocket alias socket remoteip remoteport} {
+             puts "Incoming connection on $alias: $zsocket ($type)"
+             puts "Negotiating version"
+             set greeting [binary decode hex [join [subst {
+		ff00000000000000017f0300
 		[binary encode hex NULL]
 		[string repeat 00 16]
 		00
 		[string repeat 00 31]
-	}] ""]]
+	        }] ""]]
+             fconfigure $socket -blocking 1 -encoding binary
+             puts "$zsocket >>> [display $greeting]"
+             puts -nonewline $socket $greeting
+             flush $socket
+             set remotegreeting [read $socket 64]
+             puts "$zsocket <<< [display $remotegreeting]"
+             set coroname ::tmq::coro::$socket
+             coroutine $coroname recv_$type $zsocket $socket $alias
+	     fileevent $socket readable $coroname
 
-	if {[string length $greeting] != 64} {
-		error "Invalid greeting constant [string length $greeting] <> 64"
-	}
+        }
+        # coroutine to handle incoming router connections
+        proc recv_router {zsocket socket alias} {
+             yield
+             puts "$alias: $zsocket ROUTER handshake"
+             lassign [readzmsg $socket] zmsgtype zmsg
+             puts "$alias: $zsocket <<< [display $zmsg]"
+             sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[len32 ROUTER]ROUTER]
+             yield
+             while 1 {
+                 lassign [readzmsg $socket] zmsgtype zmsg
+                 puts "$alias: $zsocket <<< [display $zmsg]"
+                 yield
+             }
 
-	proc listen {name type address callback} {
-		puts "Listening for $address ($name:$type)"
-		socket -server [namespace code [list connection $name $type $address]] [dict get $address port]
-	}
+        }
+        # coroutine to handle incoming router connections
+        proc recv_pub {zsocket socket alias} {
+             yield
+             puts "$alias: $zsocket PUB handshake"
+             lassign [readzmsg $socket] zmsgtype zmsg
+             puts "$alias: $zsocket <<< [display $zmsg]"
+             sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[len32 PUB]PUB\x08Identity[len32 ""]]
+             yield
+             while 1 {
+                   lassign [readzmsg $socket] zmsgtype zmsg
+                   puts "$alias: $zsocket <<< [display $zmsg]"
+                   yield
+             }
 
-	proc connection {name type address s ip port} {
-		variable channels
-		puts "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\nIncoming connection from $s ($ip:$port) on $address ($type) "
+        }
 
-		set channels($name) $s
-		negotiate $name $port [string toupper $type] $s
-		coroutine ::tmq_$s handle $name $port [string toupper $type] $s
-		fileevent $s readable ::tmq_$s
-
-	}
-
-	proc negotiate {name port type channel} {
-	    variable greeting
-	    variable ready
-		fconfigure $channel -blocking 1 -encoding binary -translation binary
-		puts "Incoming $type connection"
-		# Negotiate version
-		sendchannel $name [string range $greeting 0 10]
-		set remote_greeting [read $channel 11]
-		# puts "Remote greeting [display $remote_greeting]"
-	    # Send rest of greeting
-		sendchannel $name [string range $greeting 11 end]
-		append remote_greeting [read $channel [expr {64-11}]]
+        proc zframe {ztype frame} {
+             set length [string length $frame]
+             if {$length > 255} {
+	        set format W
+	     } else {
+		set format c
+	     }
+             set lengthbytes [binary format $format $length]
+             switch -exact $ztype-$format {
+                    cmd-W {return \x06$lengthbytes$frame}
+                    cmd-c {return \x04$lengthbytes$frame}
+                    msg-more-W {return \x03$lengthbytes$frame}
+                    msg-more-c {return \x01$lengthbytes$frame}
+                    msg-last-W {return \x02$lengthbytes$frame}
+                    msg-last-c {return \x00$lengthbytes$frame}
 
 
-		
+                    default {
+                       return -code error "Invalid message prefix $ztype-$more"
+                    }
 
-	}
+             }
 
-	proc handle {name port type channel} {
-		yield
 
-		while {1} {
-			# readable read the complete message
-			set more 1
-			set frames {}		
+
+
+        }
+
+        proc sendzmsg {socket ztype frames} {
+             		# on the wire format is UTF-8
+		if {$ztype eq "cmd"} {
+                   if {[llength $frames]!=1} {
+                      return -error "zmq commands can only have one frame"
+                   }
+                   set zframe [zframe cmd [lindex $frames 0]]
+                   puts "$socket >>> [display $zframe]"
+                   puts -nonewline $socket $zframe
+                   flush $socket
+                   return
+                }
+
+		foreach frame [lrange $frames 0 end-1] {
+                        set zframe [zframe msg-more $frame]
+                        puts "$socket >>> [display $zframe]"
+			puts -nonewline $socket $zframe
+		}
+		set frame [lindex $zmsg end]
+                set zframe [zframe msg-last $frame]
+                puts "$socket >>> [display $zframe]"
+		puts -nonewline $socket $zframe
+                flush $socket
+        }
+
+        proc readzmsg {socket} {
+        set more 1
+			set frames {}
 			while {$more} {
-				set prefix [read $channel 1]
-				if {[eof $channel]} {
-					puts "ERROR: Channel $channel closed" 
-					fileevent $channel readable {}
+				set prefix [read $socket 1]
+				if {[eof $socket]} {
+					puts "ERROR: Socket $socket closed"
+					fileevent $socket readable {}
 					return
 				}
 
@@ -133,7 +131,7 @@ namespace eval tmq {
 						set zmsg_type msg
 						set more 0
 						set size short
-					}	
+					}
 					\x01 {
 						set zmsg_type msg
 						set more 1
@@ -143,7 +141,7 @@ namespace eval tmq {
 						set zmsg_type msg
 						set more 0
 						set size long
-					}	
+					}
 					\x03 {
 						set zmsg_type msg
 						set more 1
@@ -153,66 +151,48 @@ namespace eval tmq {
 						set zmsg_type cmd
 						set more 0
 						set size short
-					}	
+					}
 					\x06 {
 						set zmsg_type cmd
 						set more 0
 						set size long
 					}
 					default {
-						close $channel
-						return -code error "ERROR: Unknown frame start [display $prefix 0]" 
+						close $socket
+						return -code error "ERROR: Unknown frame start [display $prefix 0]"
 					}
 				}
 				if {$size eq "short"} {
-					set length [read $channel 1]
+					set length [read $socket 1]
 					binary scan $length c bytelength
-					set bytelength [expr { $bytelength & 0xff }] 
+					set bytelength [expr { $bytelength & 0xff }]
 				} {
-					set length [read $channel 8]  
+					set length [read $socket 8]
 					binary scan $length W  bytelength
 				}
-				set frame [read $channel $bytelength]
-				puts "INFO: << [display $prefix$length$frame] 1]"
-				puts "INFO: Frame length $bytelength"
+				set frame [read $socket $bytelength]
 				lappend frames $frame
 			}
-			puts "<<<< $name ($channel:$port:$zmsg_type)"
-			flush stdout
-			if {$zmsg_type eq "msg"} {
-				# is this a Jupyter msg?
-				set index [lsearch $frames "<IDS|MSG>"]
-				if {$index != -1} {
-					set jmsg [jmsg::new $channel $name $type {*}[lrange $frames $index end]]
-					on_recv $jmsg
+                        return [list $zmsg_type $frames]
+                        }
+
+
+
+	proc display {data {showascii 1}} {
+		set decoded {}
+
+		foreach x [split $data ""] {
+			binary scan $x c d 
+				if {$d < 32 || $d > 126 || !$showascii}  {
+					append decoded \\x[binary encode hex $x]
 				} {
-					puts "WARN: Ignoring non-Jupyter zmq msg\n[display [join $frames \n] 1]\n"	
+					append decoded $x
 				}
-			} else {
-				# TODO: ignore zmq commands and pubsub for now
-		# Send the ready command
-		set first [lindex $frames 0]
-		if {[string range $first 0 5] eq "\x05READY"} {
-		set msg \x05READY\x0bSocket-Type[len32 $type]$type
-		if {$type ne "ROUTER"} {
-			append msg \x08Identity[len32 ""]
-		} 
-		set zmsg [zlen $msg]$msg
-		# puts ">>>> $name ($port:$type)\n[display $zmsg]"
-		sendchannel $name $zmsg
-		} {
-				puts "WARN: Ignoring zmq command\n[display [join $frames \n] 1]\n"
-			} }
-			yield
-		}	
-	}
-	
-	proc handle_command data {
-		return {1 {}}
 
+		}
+		return $decoded
 	}
-
-	proc zlen {str} {
+        proc zlen {str} {
 		if {[string length $str] < 256} {
 			return \x04[len8 $str]
 		} else {
@@ -226,5 +206,6 @@ namespace eval tmq {
 	proc len8 {str} {
 			return [binary format c [string length $str]]
 	}
-}
 
+
+}
