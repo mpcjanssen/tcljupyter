@@ -10,7 +10,7 @@ zmq context context
 zmq socket zsocket context PUB
 zsocket bind $port
 
-vwait forever
+
 }
 
 
