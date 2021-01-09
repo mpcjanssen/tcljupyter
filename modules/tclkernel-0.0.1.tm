@@ -21,7 +21,7 @@ proc connect {connection_file} {
 
 
 proc listen {type args} {
-    set t [thread::create]
+    set t [thread::create thread::wait]
     thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
     thread::send $t [list set auto_path $::auto_path]
     thread::send $t [list package require jupyter_$type]
