@@ -4,6 +4,9 @@ package require jmsg
 
 namespace import rl_json::json
 set to {}
+set execph {}
+
+
 
 proc busy {header} {
     iopub [list busy $header]
@@ -60,11 +63,14 @@ proc startto {pid} {
 }
 
 proc sessionerror {args} {
+     variable exec_ph
      puts "ERROR: $args"
 }
 
 proc execute_reply {jmsg} {
     variable to
+    variable exec_ph
+    set exec_ph [jmsg::header $jmsg]
     set master [thread::id]
     thread::errorproc sessionerror
          # wrap command in a catch to capture and handle interrupt messages
