@@ -11,8 +11,8 @@ proc connect {connection_file} {
     set key [json get $conn key]
     interp alias {} hmac {}  sha2::hmac -hex -key $key
 
-    set iopub [listen iopub [address iopub]]
-    listen shell [address shell] $iopub
+    set iopub [listen iopub [address iopub] $key]
+    listen shell [address shell] $key $iopub
     # listen control [address control]
     # listen stdin [address stdin]
     listen hb [address hb]
