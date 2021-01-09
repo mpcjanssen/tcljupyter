@@ -16,6 +16,22 @@ namespace import rl_json::json
 
     }
 
+    proc stream {header name text} {
+         puts "$::me >>> stream to $name"
+
+         set response [jmsg::newiopub $header stream]
+         dict with response {
+        set content [json template {
+            {
+                "name":"~S:name",
+                "text":"~S:text"
+            }
+        }]
+        }
+        jmsg::send $response $::key zsocket
+        }
+
+
 proc start {address key} {
 set ::key $key
 set ::me "iopub([pid])"

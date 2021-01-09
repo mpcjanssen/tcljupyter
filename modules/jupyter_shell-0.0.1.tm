@@ -4,9 +4,11 @@ package require jmsg
 
 namespace import rl_json::json
 set to {}
-set execph {}
+set exec_ph {}
 
-
+proc streamerr {header msg} {
+     iopub [list stream $header stderr $msg]
+}
 
 proc busy {header} {
     iopub [list busy $header]
@@ -39,7 +41,7 @@ proc handle_messages {key} {
 
 proc start {address key iopubthread} {
 zmq context context
-interp alias {} iopub {} thread::send  $iopubthread
+interp alias {} iopub {} thread::send -async $iopubthread
 zmq socket zsocket context ROUTER
 zsocket bind $address
 set ::key $key
@@ -62,9 +64,11 @@ proc startto {pid} {
 
 }
 
-proc sessionerror {args} {
+proc sessionerror {tid msg} {
      variable exec_ph
-     puts "ERROR: $args"
+     puts "ERROR: $msg"
+     streamerr $exec_ph $msg
+
 }
 
 proc execute_reply {jmsg} {
@@ -108,6 +112,7 @@ set kernel_info { {
     },
     "banner" : "~S:banner"
 }}
+
 
 
 
