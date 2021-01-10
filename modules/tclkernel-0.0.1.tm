@@ -26,6 +26,9 @@ proc connect {connection_file} {
     vwait forever
 }
 
+proc bgerror args {
+    puts "ERROR: bgerror: $args"
+}
 
 proc recv_shell {iopub zsocket frames} {
      # shell needs an available iopub channel to
@@ -41,6 +44,7 @@ proc recv_shell {iopub zsocket frames} {
      if {[catch {handle_$msgtype $zsocket $jmsg} result]} {
          set result [lindex [split $result \n] 0]
          puts "shell: $zsocket: ERROR for $msgtype: $result"
+         return
      }
 }
 
@@ -72,8 +76,8 @@ proc handle_kernel_info_request {zsocket jmsg} {
     set frames [jmsg::frames $jmsg]
     $zsocket send $frames
     iopub send [jmsg::frames [jmsg::status $parent idle]]
-    # respond shell $jmsg
 }
+
 set kernel_info { {
     "status" : "ok",
     "protocol_version": "5.3",
