@@ -58,7 +58,7 @@ proc recv_control {iopub zsocket frames} {
      puts "control: $zsocket << [tmq::display $frames]"
      if {[catch {handle_$msgtype $zsocket $jmsg} result]} {
          set result [lindex [split $result \n] 0]
-         puts "control: $zsocket: ERROR for $msgtype: $result"
+         puts "control: $zsocket: ERROR for $msgtype: $result\n$::errorInfo"
          return
      }
 }
@@ -86,6 +86,11 @@ proc handle_kernel_info_request {zsocket jmsg} {
     set frames [jmsg::frames $jmsg]
     $zsocket send $frames
     iopub send [jmsg::frames [jmsg::status $parent idle]]
+}
+
+proc handle_shutdown_request {args} {
+    puts ">>>>>>>>>>>>>>>>>>>>>>>>> Kernel stopped, pid: [pid] <<<<<<<<<<<<<<<<<<<<<<<<<"
+    after 0 {exit 0}
 }
 
 set kernel_info { {

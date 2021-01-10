@@ -18,9 +18,11 @@ namespace eval jmsg {
 
     proc new {frames} {
          set result {}
+         set zprefix {}
          set index [lsearch $frames "<IDS|MSG>"]
          if {$index != -1} {
-	    set frames [lrange $frames $index end]
+             set prefix [lrange $frames 0 $index-1]
+	        set frames [lrange $frames $index end]
          } else {
            return -code error "Can't find Jupyter delimiter"
          }
@@ -29,7 +31,7 @@ namespace eval jmsg {
          if {$calc_hmac ne $hmac} {
            return -code error "HMAC mismatch $calc_hmac : $hmac"
          }
-
+         dict set result zprefix $zprefix
          dict set result delimiter $delimiter
          dict set result hmac $hmac
          dict set result header $header
@@ -43,6 +45,7 @@ namespace eval jmsg {
      proc frames {jmsg} {
                   set result {}
           dict with jmsg {
+                  dict set result zprefix $zprefix
                   dict set result delimiter $delimiter
                   dict set result header $header
                   dict set result parent $parent
@@ -50,9 +53,9 @@ namespace eval jmsg {
                   dict set result content [encoding convertto utf-8 $content]
           }
           dict with result {
-               set hmac [hmac "$header$parent$metadata$content"]
+            set hmac [hmac "$header$parent$metadata$content"]
+            return [list {*}$zprefix $delimiter $hmac $header $parent $metadata $content]
           }
-          return [list {} $delimiter $hmac $header $parent $metadata $content]
      }
 
 
@@ -70,7 +73,7 @@ namespace eval jmsg {
         set username [json get $parent username]
         set header [jmsg::newheader $username $msgtype]
         set content [json template {{}}]
-        set jmsg [list port iopub uuid "" delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
+        set jmsg [list port iopub zprefix {} delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
         return $jmsg
     }
     proc status {parent state} {
