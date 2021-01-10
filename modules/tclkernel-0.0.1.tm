@@ -18,16 +18,12 @@ proc connect {connection_file} {
     interp alias {} hmac {} sha2::hmac -hex -key $key
     set iopub [tmq::serve pub [json get $conn iopub_port] iopub recv_iopub]
     tmq::serve router [json get $conn shell_port] shell [list recv_shell $iopub]
-    tmq::serve router [json get $conn control_port] control recv_control
+    tmq::serve router [json get $conn control_port] control [list recv_control $iopub] 
     tmq::serve router [json get $conn stdin_port] stdin recv_stdin
 
     interp alias {} iopub {} $iopub
     tmq::serve rep [json get $conn hb_port] hb recv_hb
     vwait forever
-}
-
-proc bgerror args {
-    puts "ERROR: bgerror: $args"
 }
 
 proc recv_shell {iopub zsocket frames} {
@@ -49,8 +45,22 @@ proc recv_shell {iopub zsocket frames} {
 }
 
 
-proc recv_control {zsocket zmsg} {
-     puts "control: $zsocket << [tmq::display $zmsg]"
+proc recv_control {iopub zsocket frames} {
+    # shell control an available iopub channel to
+     # show status
+     if {[info commands $iopub] eq {}} {
+        puts "No IOPUB connection yet, waiting.."
+        after 100 [list recv_control $iopub $zsocket $frames]
+     }
+     set jmsg [jmsg::new $frames]
+
+     set msgtype [jmsg::msgtype $jmsg]
+     puts "control: $zsocket << [tmq::display $frames]"
+     if {[catch {handle_$msgtype $zsocket $jmsg} result]} {
+         set result [lindex [split $result \n] 0]
+         puts "control: $zsocket: ERROR for $msgtype: $result"
+         return
+     }
 }
 
 proc recv_iopub {zsocket zmsg} {

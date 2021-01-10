@@ -35,7 +35,7 @@ namespace eval tmq {
              puts "$zsocket <<< [display $remotegreeting]"
              set coroname ::tmq::coro::$socket
              coroutine $coroname recv_$type $zsocket $socket $alias $callback
-	     fileevent $socket readable $coroname
+	        fileevent $socket readable [list ::tmq::protect $alias $coroname]
              interp alias {} $zsocket {} ::tmq::socketcmd $zsocket $socket
 
         }
@@ -51,6 +51,7 @@ namespace eval tmq {
                  lassign [readzmsg $socket] zmsgtype zmsg
                  if {$zmsg eq {}} {
                   # No message close coro
+                  puts "WARN: No message on $alias closing callbacks"
                   return
                  }
                  if {$zmsgtype eq "msg"} {
@@ -138,12 +139,13 @@ namespace eval tmq {
         set more 1
 			set frames {}
 			while {$more} {
-				set prefix [read $socket 1]
-				if {[eof $socket]} {
+                    if {[eof $socket]} {
 					puts "ERROR: Socket $socket closed"
 					fileevent $socket readable {}
 					return 
 				}
+				set prefix [read $socket 1]
+
 
 				switch -exact $prefix {
 					\x00 {
@@ -225,6 +227,13 @@ namespace eval tmq {
 	proc len8 {str} {
 			return [binary format c [string length $str]]
 	}
+
+     proc protect {alias args} {
+          if {[catch $args result]} {
+               puts "ERROR in $alias callback $args: $result"
+               return -code error $result
+          }
+     }
 
 
 }

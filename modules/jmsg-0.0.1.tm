@@ -36,7 +36,6 @@ namespace eval jmsg {
          dict set result parent $parent
          dict set result metadata [encoding convertfrom utf-8 $metadata]
          dict set result content [encoding convertfrom utf-8 $content]
-         puts "JMSG: [lindex $frames 0]"
 
          return $result
      }
