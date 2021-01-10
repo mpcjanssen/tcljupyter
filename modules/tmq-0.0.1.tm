@@ -49,6 +49,10 @@ namespace eval tmq {
              yield
              while 1 {
                  lassign [readzmsg $socket] zmsgtype zmsg
+                 if {$zmsg eq {}} {
+                  # No message close coro
+                  return
+                 }
                  if {$zmsgtype eq "msg"} {
                     {*}$callback $zsocket $zmsg
                  }
@@ -61,6 +65,10 @@ namespace eval tmq {
              yield
              puts "$alias: $zsocket PUB handshake"
              lassign [readzmsg $socket] zmsgtype zmsg
+             if {$zmsg eq {}} {
+                  # No message close coro
+                  return
+             }
              puts "$alias: $zsocket <<< [display $zmsg]"
              sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[len32 PUB]PUB\x08Identity[len32 ""]]
              yield
@@ -134,7 +142,7 @@ namespace eval tmq {
 				if {[eof $socket]} {
 					puts "ERROR: Socket $socket closed"
 					fileevent $socket readable {}
-					return
+					return 
 				}
 
 				switch -exact $prefix {

@@ -32,13 +32,16 @@ proc recv_shell {iopub zsocket frames} {
      # show status
      if {[info commands $iopub] eq {}} {
         puts "No IOPUB connection yet, waiting.."
-        after 100 [list recv_shell $iopub $cmd $zsocket $frames]
+        after 100 [list recv_shell $iopub $zsocket $frames]
      }
      set jmsg [jmsg::new $frames]
 
      set msgtype [jmsg::msgtype $jmsg]
      puts "shell: $zsocket ($msgtype) << $jmsg"
-     handle_$msgtype $zsocket $jmsg
+     if {[catch {handle_$msgtype $zsocket $jmsg} result]} {
+         set result [lindex [split $result \n] 0]
+         puts "shell: $zsocket: ERROR for $msgtype: $result"
+     }
 }
 
 
