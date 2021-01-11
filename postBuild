@@ -40,6 +40,7 @@ mkdir -p $KERNELPATH
 cp $REPO/kernel.json.binder $KERNELPATH/kernel.json
 cp $REPO/init.tcl $KERNELPATH/
 cp -R $REPO/modules $KERNELPATH/
+cp -R $REPO/libs $KERNELPATH/
 
 tclsh $KERNELPATH/init.tcl
 echo `ls -R  $PREFIX/share/jupyter/kernels/`
