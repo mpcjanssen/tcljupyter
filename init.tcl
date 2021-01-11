@@ -1,11 +1,12 @@
 tcl::tm::path add [file join [file dirname [info script]] modules]
-lappend auto_path [file join [file dirname [info script]] libs-$tcl_platform(platform)]
 lappend auto_path [file join [file dirname [info script]] libs]
 
 
 package require Tcl 8.6
 
 if {[llength $argv] == 0} {
+  puts [info script]
+  puts [glob [file dirname [info script]]/libs/*]
   puts $auto_path
   puts [package require Thread]
   puts [package require rl_json]
