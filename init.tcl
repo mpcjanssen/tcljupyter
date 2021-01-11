@@ -6,6 +6,7 @@ package require Tcl 8.6
 
 if {[llength $argv] == 0} {
   puts [info script]
+  puts [glob [file dirname [info script]]/*]
   puts [glob [file dirname [info script]]/libs/*]
   puts $auto_path
   puts [package require Thread]
