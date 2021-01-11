@@ -109,17 +109,7 @@ namespace eval tmq {
 					set length [read $socket 8]
 					binary scan $length W  bytelength
 				}
-                    if {[eof $socket]} {
-					puts "ERROR: Socket $socket closed"
-					fileevent $socket readable {}
-					return 
-				}
 				set frame [read $socket $bytelength]
-                    if {[eof $socket]} {
-					puts "ERROR: Socket $socket closed"
-					fileevent $socket readable {}
-					return 
-				}
 				lappend frames $frame
 			}
                         return [list $zmsg_type $frames]

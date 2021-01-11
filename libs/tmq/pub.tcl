@@ -31,7 +31,8 @@
              puts "$alias <<< [tmq::display $remotegreeting]"
              puts "$alias: PUB handshake"
              lassign [tmq::readzmsg $socket] zmsgtype zmsg
-             tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 PUB]PUB\x08Identity[tmq::len32 ""]]
+	     set uuid [uuid::uuid generate]
+             tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 PUB]PUB\x08Identity[tmq::len32 $uuid ]$uuid]
              lappend peers $socket
 
         }
@@ -47,7 +48,7 @@
 
              set initialstart 0
              foreach peer $peers {
-               if {[catch {tmq::sendzmsg $peer msg [list {} {*}$zmsg]} result]} {
+               if {[catch {tmq::sendzmsg $peer msg [list status {*}$zmsg]} result]} {
                     puts =============$result$::errorInfo
                     set peers [lsearch -all -inline -not $peers $peer]
                }

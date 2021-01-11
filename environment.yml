@@ -6,6 +6,5 @@ dependencies:
 # host Dependencies
   - tcl
   - make
-  - zeromq
   - git
   - libuuid

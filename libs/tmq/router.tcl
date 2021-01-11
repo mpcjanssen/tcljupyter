@@ -1,7 +1,7 @@
      package require uuid
 
      array set peers {}
-
+     set initialstart 1
      set clients {}
         proc start {port alias} {
              socket -server [namespace code [list connection $alias]] $port
@@ -29,7 +29,16 @@
              puts "$alias <<< [tmq::display $remotegreeting]"
              set coroname ::coro_$socket
              coroutine $coroname recv $socket $alias 
+             puts "$alias:  ROUTER handshake"
+             lassign [tmq::readzmsg $socket] zmsgtype zmsg
+             # puts "$alias: <<< [tmq::display [lindex $zmsg 0]]"
+             tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 ROUTER]ROUTER]
+	     if {$::initialstart} {  
+		     after 1500 [list fileevent $socket readable $coroname]
+		     set ::initialstart 0
+	     } else {
 	        fileevent $socket readable $coroname
+	     }
              set identity [uuid::uuid generate]
              set peers(id-$identity) $socket
              set peers(sock-$socket) $identity
@@ -40,16 +49,10 @@
           proc recv {socket alias} {
              variable peers
              yield
-             puts "$alias:  ROUTER handshake"
-             lassign [tmq::readzmsg $socket] zmsgtype zmsg
-             # puts "$alias: <<< [tmq::display [lindex $zmsg 0]]"
-             tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 ROUTER]ROUTER]
-             yield
              while 1 {
                  lassign [tmq::readzmsg $socket] zmsgtype zmsg
                  if {$zmsg eq {}} {
                   # No message close coro
-                  puts "WARN: No message on $alias closing callbacks"
                   return
                  }
                  if {$zmsgtype eq "msg"} {
