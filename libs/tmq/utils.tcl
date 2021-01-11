@@ -44,6 +44,8 @@ namespace eval tmq {
                         set zframe [zframe msg-more $frame]
                         # puts "$socket >>> [display $zframe]"
 			puts -nonewline $socket $zframe
+			                   flush $socket
+
 		}
 		set frame [lindex $frames end]
                 set zframe [zframe msg-last $frame]

@@ -34,8 +34,8 @@ namespace eval jmsg {
          dict set result zprefix $zprefix
          dict set result delimiter $delimiter
          dict set result hmac $hmac
-         dict set result header $header
-         dict set result parent $parent
+         dict set result header [encoding convertfrom utf-8 $header]
+         dict set result parent  [encoding convertfrom utf-8 $parent]
          dict set result metadata [encoding convertfrom utf-8 $metadata]
          dict set result content [encoding convertfrom utf-8 $content]
 
@@ -47,7 +47,7 @@ namespace eval jmsg {
                   dict with jmsg {
                   dict set result delimiter $delimiter
                   dict set result header  [encoding convertto utf-8 $header]
-                  dict set result parent $parent
+                  dict set result parent [encoding convertto utf-8 $parent]
                   dict set result metadata [encoding convertto utf-8 $metadata]
                   dict set result content [encoding convertto utf-8 $content]
           }

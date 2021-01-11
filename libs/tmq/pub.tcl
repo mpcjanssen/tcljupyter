@@ -31,8 +31,7 @@
              puts "$alias: PUB handshake"
              lassign [tmq::readzmsg $socket] zmsgtype zmsg
              tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 PUB]PUB\x08Identity[tmq::len32 ""]]
-             lappend peers $socket
-             fconfigure $socket -blocking 1 -encoding binary
+             set peers $socket
 
         }
 
@@ -47,7 +46,6 @@
 
              set initialstart 0
              foreach peer $peers {
-                  after 10
                tmq::sendzmsg $peer msg [list {} {*}$zmsg]
              }
         }
