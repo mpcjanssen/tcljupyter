@@ -29,20 +29,19 @@
              set coroname ::coro_$socket
              coroutine $coroname recv $socket $alias 
 	        fileevent $socket readable $coroname
-             # set peers($dentity) $socket
+             set identity [uuid::uuid generate]
+             set peers(id-$identity) $socket
+             set peers(sock-$socket) $identity
 
         }
-        proc send {identiy zmsg} {
-             variable type
-             puts "Sending zmsg on $alias (router) id: $identity"
-        }
+
 
           proc recv {socket alias} {
-             variable clients
+             variable peers
              yield
              puts "$alias:  ROUTER handshake"
              lassign [tmq::readzmsg $socket] zmsgtype zmsg
-             puts "$alias: <<< [tmq::display $zmsg]"
+             puts "$alias: <<< [tmq::display [lindex $zmsg 0]]"
              tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 ROUTER]ROUTER]
              yield
              while 1 {
@@ -53,18 +52,26 @@
                   return
                  }
                  if {$zmsgtype eq "msg"} {
-                    on_recv $zmsg
+                    try {
+                         on_recv $peers(sock-$socket) $zmsg
+                    } on error result {
+                         puts "ERROR in router $alias on_recv callback\n$result"
+                    }
                  }
                  yield
              }
 
         }
 
-        proc on_cmd {cmd identity args} {
-             puts "router cmd $args"
-             switch -exact $cmd {
-                  send {
-
-                  }
-             }
+        proc on_cmd {cmd args} {
+             puts "router cmd $cmd $args"
+             cmd-$cmd {*}$args
         }
+
+         proc cmd-send {identity zmsg} {
+             variable peers
+             puts "Sending zmsg on (router) id: $identity"
+             tmq::sendzmsg $peers(id-$identity) msg $zmsg
+        }
+
+        
