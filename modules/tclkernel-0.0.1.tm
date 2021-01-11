@@ -153,7 +153,7 @@ proc listen {port type} {
     $ports($port) bind [address $port]
     # bit of a nasty hack because readable callback is a single
     # command without arguments
-    listen_loop $port
+    if {$port ne "iopub"} { listen_loop $port }
 }
 
 proc address {port} {
