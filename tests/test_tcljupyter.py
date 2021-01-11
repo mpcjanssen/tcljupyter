@@ -21,8 +21,7 @@ class TclJupyterTests(jkt.KernelTests):
     # Samples of code which generate a result value (ie, some text
     # displayed as Out[n])
     code_execute_result = [
-        {'code': 'expr {6 * 7}', 'result': '42'},
-        {'code': "%%noresult\nexpr {6 * 7}", 'result': ''}
+        {'code': 'expr {6 * 7}', 'result': '42'}
     ]
 
     # Tests on is_complete_* interactions between frontend and kernel

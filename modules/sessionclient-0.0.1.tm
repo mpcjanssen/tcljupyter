@@ -274,7 +274,7 @@ proc execute_request {jmsg} {
 	dict with err {
 	    set content $rcontent
 	}
-	respond $err
+	puts stderr $emsg
 	
 	json set rcontent status [json string "error"]
 	
