@@ -1,15 +1,14 @@
 package require tmq
-package require rl_json
-package require sha256
+package require Thread
 package require jmsg
 
 namespace import rl_json::json
-
-set script [file normalize [info script]]
-set modfile [file root [file tail $script]]
-lassign [split $modfile -] _ modver
+set to {}
+set modver 0.1
+set key {}
 
 proc connect {connection_file} {
+    variable key
     set f [open $connection_file]
     set conn [read $f]
     close $f
@@ -22,6 +21,7 @@ proc connect {connection_file} {
     # tmq::serve router [json get $conn stdin_port] stdin recv_stdin
 
     # tmq::serve rep [json get $conn hb_port] hb recv_hb
+    start [pid]
     vwait forever
 }
 
@@ -107,6 +107,15 @@ proc handle_shutdown_request {identity jmsg} {
     }
 }
 
+interp alias {} handle_execute_request {} handle_session_request execute_request
+
+proc handle_session_request {type identity jmsg} {
+    puts HERE
+    variable to
+
+    thread::send -async $to [list $type $identity $jmsg]
+}
+
 set kernel_info { {
     "status" : "ok",
     "protocol_version": "5.3",
@@ -120,3 +129,44 @@ set kernel_info { {
     },
     "banner" : "~S:banner"
 }}
+
+proc start {pid} {
+    variable to
+    variable key
+    set to [thread::create]
+    puts "Created thread $to for $pid"
+    thread::send $to [list set master [thread::id]]
+    thread::send $to [list set auto_path $::auto_path]
+    thread::send $to [list tcl::tm::path add {*}[tcl::tm::path list]]
+    thread::send $to {
+        package require sessionclient
+        chan push stdout {writechan stdout} 
+        chan push stderr {writechan stderr} 
+        interp create slave
+        interp alias slave ::jupyter::display {} display
+        interp alias slave ::jupyter::updatedisplay {} updatedisplay
+        interp alias slave ::jupyter::complete slave ::jupyter::defaultcomplete
+        slave eval {
+            namespace eval jupyter {
+                proc defaultcomplete {code pos} {
+                    return [list {} $pos]
+                }
+                proc html {body} {
+                    return [display text/html $body]
+                }
+                proc updatehtml {id body} {
+                    return [updatedisplay $id text/html $body]
+                }
+                namespace export display updatedisplay html updatehtml
+            }
+        }
+    }
+}
+
+proc to_iopub {jmsg} {
+    iopub send [jmsg::frames $jmsg]
+}
+
+proc to_shell {identity jmsg} {
+    shell send $identity [jmsg::frames $jmsg]
+}

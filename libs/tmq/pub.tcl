@@ -32,11 +32,11 @@
              lassign [tmq::readzmsg $socket] zmsgtype zmsg
              tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 PUB]PUB\x08Identity[tmq::len32 ""]]
              lappend peers $socket
+             fconfigure $socket -blocking 1 -encoding binary
 
         }
 
         proc on_cmd {cmd args} {
-             puts "pub cmd $cmd $args"
              cmd-$cmd {*}$args
         }
 
@@ -47,7 +47,8 @@
 
              set initialstart 0
              foreach peer $peers {
-               tmq::sendzmsg $peer msg $zmsg
+                  after 10
+               tmq::sendzmsg $peer msg [list {} {*}$zmsg]
              }
         }
         

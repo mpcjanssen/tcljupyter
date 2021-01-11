@@ -44,17 +44,16 @@ namespace eval jmsg {
 
      proc frames {jmsg} {
                   set result {}
-          dict with jmsg {
-                  dict set result zprefix $zprefix
+                  dict with jmsg {
                   dict set result delimiter $delimiter
-                  dict set result header $header
+                  dict set result header  [encoding convertto utf-8 $header]
                   dict set result parent $parent
                   dict set result metadata [encoding convertto utf-8 $metadata]
                   dict set result content [encoding convertto utf-8 $content]
           }
           dict with result {
             set hmac [hmac "$header$parent$metadata$content"]
-            return [list {*}$zprefix $delimiter $hmac $header $parent $metadata $content]
+            return [list $delimiter $hmac $header $parent $metadata $content]
           }
      }
 
@@ -73,7 +72,7 @@ namespace eval jmsg {
         set username [json get $parent username]
         set header [jmsg::newheader $username $msgtype]
         set content [json template {{}}]
-        set jmsg [list port iopub zprefix {} delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
+        set jmsg [list delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
         return $jmsg
     }
     proc status {parent state} {

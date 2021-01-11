@@ -4,7 +4,7 @@ lappend auto_path [file join [file dirname [info script]] libs]
 
 
 package require Tcl 8.6
-package require tclkernel
+
 if {[llength $argv] == 0} {
   puts $auto_path
   puts [package require Thread]
@@ -12,6 +12,7 @@ if {[llength $argv] == 0} {
   puts [package require tmq]
   exit 1
 }
+source [file join [file dirname [info script]] tclkernel.tcl]
 lassign $argv connection_file
 puts ">>>>>>>>>>>>>>>>>>>>>>>>> Kernel started, pid: [pid] <<<<<<<<<<<<<<<<<<<<<<<<<"
 connect $connection_file

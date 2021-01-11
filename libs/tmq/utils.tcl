@@ -1,8 +1,4 @@
-set mod_dir [file dirname [info script]]
-
 namespace eval tmq {
-        # namespace for connection handlers and socket aliases
-        
         proc zframe {ztype frame} {
              set length [string length $frame]
              if {$length > 255} {
@@ -38,7 +34,7 @@ namespace eval tmq {
                       return -error "zmq commands can only have one frame"
                    }
                    set zframe [zframe cmd [lindex $frames 0]]
-                   puts "$socket >>> [display $zframe]"
+                   # puts "$socket >>> [display $zframe]"
                    puts -nonewline $socket $zframe
                    flush $socket
                    return
@@ -46,12 +42,12 @@ namespace eval tmq {
 
 		foreach frame [lrange $frames 0 end-1] {
                         set zframe [zframe msg-more $frame]
-                        puts "$socket >>> [display $zframe]"
+                        # puts "$socket >>> [display $zframe]"
 			puts -nonewline $socket $zframe
 		}
 		set frame [lindex $frames end]
                 set zframe [zframe msg-last $frame]
-                puts "$socket >>> [display $zframe]"
+                # puts "$socket >>> [display $zframe]"
 		puts -nonewline $socket $zframe
                 flush $socket
         }

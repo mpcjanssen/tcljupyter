@@ -41,7 +41,7 @@
              yield
              puts "$alias:  ROUTER handshake"
              lassign [tmq::readzmsg $socket] zmsgtype zmsg
-             puts "$alias: <<< [tmq::display [lindex $zmsg 0]]"
+             # puts "$alias: <<< [tmq::display [lindex $zmsg 0]]"
              tmq::sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[tmq::len32 ROUTER]ROUTER]
              yield
              while 1 {
@@ -64,7 +64,6 @@
         }
 
         proc on_cmd {cmd args} {
-             puts "router cmd $cmd $args"
              cmd-$cmd {*}$args
         }
 
