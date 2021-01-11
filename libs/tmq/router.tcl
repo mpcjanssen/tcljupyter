@@ -10,6 +10,7 @@
         
         
         proc connection {alias socket remoteip remoteport} {
+		fconfigure $socket -encoding binary -translation binary -blocking 1
              variable peers
              puts "Incoming connection on $alias: (ROUTER)"
              puts "Negotiating version"

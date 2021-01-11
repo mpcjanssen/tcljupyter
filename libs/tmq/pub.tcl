@@ -11,6 +11,7 @@
         
         
         proc connection {alias socket remoteip remoteport} {
+		fconfigure $socket -encoding binary -translation binary -blocking 1
              variable peers
              variable queue
              puts "Incoming connection on $alias: (PUB)"
