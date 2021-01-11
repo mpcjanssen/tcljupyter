@@ -1,5 +1,7 @@
 tcl::tm::path add [file join [file dirname [info script]] modules]
 lappend auto_path [file join [file dirname [info script]] libs-$tcl_platform(platform)]
+lappend auto_path [file join [file dirname [info script]] libs]
+
 
 package require Tcl 8.6
 package require tclkernel

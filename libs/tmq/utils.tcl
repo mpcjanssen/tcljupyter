@@ -1,87 +1,8 @@
+set mod_dir [file dirname [info script]]
+
 namespace eval tmq {
         # namespace for connection handlers and socket aliases
-        namespace eval coro {}
-        namespace eval socket {}
-        set socket_id 0
-
-        proc socketcmd {zsocket socket cmd args} {
-             lassign $args frames
-             sendzmsg $socket msg $frames
-        }
-
-        proc serve {type port alias callback} {
-             variable socket_id
-             puts "Serving $type on $port"
-             set zsocket [namespace current]::[incr socket_id]
-             socket -server [namespace code [list connection $type $zsocket $alias $callback]] $port
-
-             return $zsocket
-        }
-        proc connection {type zsocket alias callback socket remoteip remoteport} {
-             puts "Incoming connection on $alias: $zsocket ($type)"
-             puts "Negotiating version"
-             set greeting [binary decode hex [join [subst {
-		ff00000000000000017f0300
-		[binary encode hex NULL]
-		[string repeat 00 16]
-		00
-		[string repeat 00 31]
-	        }] ""]]
-             fconfigure $socket -blocking 1 -encoding binary
-             puts "$zsocket >>> [display $greeting]"
-             puts -nonewline $socket $greeting
-             flush $socket
-             set remotegreeting [read $socket 64]
-             puts "$zsocket <<< [display $remotegreeting]"
-             set coroname ::tmq::coro::$socket
-             coroutine $coroname recv_$type $zsocket $socket $alias $callback
-	        fileevent $socket readable [list ::tmq::protect $alias $coroname]
-             interp alias {} $zsocket {} ::tmq::socketcmd $zsocket $socket
-
-        }
-        # coroutine to handle incoming router connections
-        proc recv_router {zsocket socket alias callback} {
-             yield
-             puts "$alias: $zsocket ROUTER handshake"
-             lassign [readzmsg $socket] zmsgtype zmsg
-             puts "$alias: $zsocket <<< [display $zmsg]"
-             sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[len32 ROUTER]ROUTER]
-             yield
-             while 1 {
-                 lassign [readzmsg $socket] zmsgtype zmsg
-                 if {$zmsg eq {}} {
-                  # No message close coro
-                  puts "WARN: No message on $alias closing callbacks"
-                  return
-                 }
-                 if {$zmsgtype eq "msg"} {
-                    {*}$callback $zsocket $zmsg
-                 }
-                 yield
-             }
-
-        }
-        # coroutine to handle incoming router connections
-        proc recv_pub {zsocket socket alias callback} {
-             yield
-             puts "$alias: $zsocket PUB handshake"
-             lassign [readzmsg $socket] zmsgtype zmsg
-             if {$zmsg eq {}} {
-                  # No message close coro
-                  return
-             }
-             puts "$alias: $zsocket <<< [display $zmsg]"
-             sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[len32 PUB]PUB\x08Identity[len32 ""]]
-             yield
-             while 1 {
-                 if {$zmsgtype eq "msg"} {
-                    {*}$callback $zsocket $zmsg
-                 }
-                 yield
-             }
-
-        }
-
+        
         proc zframe {ztype frame} {
              set length [string length $frame]
              if {$length > 255} {
@@ -139,13 +60,12 @@ namespace eval tmq {
         set more 1
 			set frames {}
 			while {$more} {
+				set prefix [read $socket 1]
                     if {[eof $socket]} {
 					puts "ERROR: Socket $socket closed"
 					fileevent $socket readable {}
 					return 
 				}
-				set prefix [read $socket 1]
-
 
 				switch -exact $prefix {
 					\x00 {
@@ -191,7 +111,17 @@ namespace eval tmq {
 					set length [read $socket 8]
 					binary scan $length W  bytelength
 				}
+                    if {[eof $socket]} {
+					puts "ERROR: Socket $socket closed"
+					fileevent $socket readable {}
+					return 
+				}
 				set frame [read $socket $bytelength]
+                    if {[eof $socket]} {
+					puts "ERROR: Socket $socket closed"
+					fileevent $socket readable {}
+					return 
+				}
 				lappend frames $frame
 			}
                         return [list $zmsg_type $frames]
@@ -227,13 +157,4 @@ namespace eval tmq {
 	proc len8 {str} {
 			return [binary format c [string length $str]]
 	}
-
-     proc protect {alias args} {
-          if {[catch $args result]} {
-               puts "ERROR in $alias callback $args: $result"
-               return -code error $result
-          }
-     }
-
-
 }
