@@ -120,7 +120,7 @@ proc complete_request {jmsg} {
     variable ph
     set ph [dict get $jmsg header]
     respond [jmsg::status $ph busy]
-     
+    
     set cursor_pos [json get [dict get $jmsg content] cursor_pos]
     set code [json get [dict get $jmsg content] code]
     set cursor_start $cursor_pos
@@ -159,7 +159,7 @@ proc is_complete_request {jmsg} {
     
     set ph [dict get $jmsg header]
     respond [jmsg::status $ph busy]
-     
+    
     set code [json get [dict get $jmsg content] code]
     append code \n
     if {[info complete $code]} {
@@ -231,10 +231,10 @@ proc execute_request {jmsg} {
     foreach line $lines {
 	set trimmed [string trim $line]
 	if {$expect_magics && [string range $trimmed 0 1] eq {%%}} {
-	   set magic_parts [split $trimmed]
-	   lassign $magic_parts magic_cmd magic_arg1 magic_arg2
-           set magic_cmd [string range $magic_cmd 2 end]
-	   switch -exact $magic_cmd {
+	    set magic_parts [split $trimmed]
+	    lassign $magic_parts magic_cmd magic_arg1 magic_arg2
+	    set magic_cmd [string range $magic_cmd 2 end]
+	    switch -exact $magic_cmd {
 		timeit {
                     dict set magics timeit 1
                     if {$magic_arg1 ne {}} {
@@ -245,11 +245,11 @@ proc execute_request {jmsg} {
 		    dict set magics noresult 1
                 }
 		default {set error "Invalid magic %%$magic_cmd"}
-	   }
-	   continue 
+	    }
+	    continue 
 	} else {
-          set expect_magics 0
-	  lappend code $line
+	    set expect_magics 0
+	    lappend code $line
 	}
     }
     if {$error ne {}} {
@@ -258,7 +258,7 @@ proc execute_request {jmsg} {
     set code [join $code \n]    
     dict with magics {
         set time_result [time {
-    	   set error [catch {slave eval $code} result]
+	    set error [catch {slave eval $code} result]
         } $timeit_count]
     }
     if {[dict get $magics timeit]} {

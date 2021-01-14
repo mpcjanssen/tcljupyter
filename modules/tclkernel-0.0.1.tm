@@ -61,10 +61,10 @@ proc on_recv {port} {
     # puts -nonewline "Polling for message on $port"
     set res [zmq poll [list [list $ports($port) POLLIN]] 1]
     if {$res eq ""} {
-      # puts "...none"
-      return
+	# puts "...none"
+	return
     } {
-      # puts "...handling"
+	# puts "...handling"
     }
     set zmsg [zmsg recv $ports($port)]
     # puts "\n\n\n\n$port [string repeat < 20]"
@@ -119,16 +119,16 @@ proc start {pid} {
                 proc defaultcomplete {code pos} {
                     return [list {} $pos]
                 }
-                proc html {body} {
-                    return [display text/html $body]
-                }
-                proc updatehtml {id body} {
-                    return [updatedisplay $id text/html $body]
-                }
-                namespace export display updatedisplay html updatehtml
-            }
-        }
-    }
+proc html {body} {
+    return [display text/html $body]
+}
+proc updatehtml {id body} {
+    return [updatedisplay $id text/html $body]
+}
+namespace export display updatedisplay html updatehtml
+}
+}
+}
 }
 
 proc starthb {} {
@@ -143,8 +143,8 @@ proc starthb {} {
 }
 
 proc listen_loop port {
-  on_recv $port
-  after 50 [list listen_loop $port]
+    on_recv $port
+    after 50 [list listen_loop $port]
 }
 
 proc listen {port type} {
