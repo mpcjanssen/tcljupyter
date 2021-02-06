@@ -1,4 +1,6 @@
 namespace eval tmq {
+	array set channels {}
+	array set queue {}
 	proc display {data {showascii 0}} {
 		set decoded {}
 
@@ -16,17 +18,28 @@ namespace eval tmq {
 
 
 	proc sendchannel {name bytes} {
+		variable queue
+		lappend queue($name) $bytes
 		variable channels
 		if {[catch {
 			set channel $channels($name)
 			if {[eof $channel]} {
 				# Remote closed
-				puts "WARN: Remote was closed"
+				puts "WARN: Remote $channel ($name) was closed"
 				close $channel
 				return 0
 			}
-			puts -nonewline $channel $bytes
-			flush $channel
+			while {[llength $queue($name)] > 0} {
+				set rest [lassign $queue($name) msg]
+				puts -nonewline $channel $msg
+				flush $channel
+				if {[eof $channel]} break
+				set queue($name) $rest
+ 
+			}
+
+
+		
 		} result]} {
 			puts "ERROR: could not send to channel $name\n$result"
 			
@@ -87,7 +100,6 @@ namespace eval tmq {
 	proc connection {name type address s ip port} {
 		variable channels
 		puts "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\nIncoming connection from $s ($ip:$port) on $address ($type) "
-
 		set channels($name) $s
 		negotiate $name $port [string toupper $type] $s
 		coroutine ::tmq_$s handle $name $port [string toupper $type] $s
@@ -115,6 +127,7 @@ namespace eval tmq {
 
 	proc handle {name port type channel} {
 		yield
+		variable channels
 
 		while {1} {
 			# readable read the complete message
@@ -173,11 +186,12 @@ namespace eval tmq {
 					binary scan $length W  bytelength
 				}
 				set frame [read $channel $bytelength]
-				puts "INFO: << [display $prefix$length$frame] 1]"
-				puts "INFO: Frame length $bytelength"
+				# puts "INFO: << [display $prefix$length$frame] 1]"
+				#puts "INFO: Frame length $bytelength"
 				lappend frames $frame
 			}
 			puts "<<<< $name ($channel:$port:$zmsg_type)"
+			set channels($name) $channel
 			flush stdout
 			if {$zmsg_type eq "msg"} {
 				# is this a Jupyter msg?
