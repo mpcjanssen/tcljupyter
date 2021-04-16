@@ -120,7 +120,7 @@ proc complete_request {jmsg} {
     variable ph
     set ph [dict get $jmsg header]
     respond [jmsg::status $ph busy]
-     
+    
     set cursor_pos [json get [dict get $jmsg content] cursor_pos]
     set code [json get [dict get $jmsg content] code]
     set cursor_start $cursor_pos
@@ -159,7 +159,7 @@ proc is_complete_request {jmsg} {
     
     set ph [dict get $jmsg header]
     respond [jmsg::status $ph busy]
-     
+    
     set code [json get [dict get $jmsg content] code]
     append code \n
     if {[info complete $code]} {
@@ -248,8 +248,8 @@ proc execute_request {jmsg} {
 	   }
 	   continue 
 	} else {
-          set expect_magics 0
-	  lappend code $line
+	    set expect_magics 0
+	    lappend code $line
 	}
     }
     
@@ -262,7 +262,7 @@ proc execute_request {jmsg} {
     }   
     dict with magics {
         set time_result [time {
-    	   set error [catch {slave eval $code} result]
+	    set error [catch {slave eval $code} result]
         } $timeit_count]
     }
     if {[dict get $magics timeit]} {
