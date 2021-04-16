@@ -230,7 +230,7 @@ proc execute_request {jmsg} {
     set expect_magics 1
     foreach line $lines {
 	set trimmed [string trim $line]
-	if {$expect_magics && [string range $trimmed 0 1] eq {%%}} {
+	if {$expect_magics && [string range $trimmed 0 1] eq {##}} {
 	   set magic_parts [split $trimmed]
 	   lassign $magic_parts magic_cmd magic_arg1 magic_arg2
            set magic_cmd [string range $magic_cmd 2 end]
@@ -244,7 +244,7 @@ proc execute_request {jmsg} {
                 noresult {
 		    dict set magics noresult 1
                 }
-		default {set error "Invalid magic %%$magic_cmd"}
+		default {set error "Invalid magic ##$magic_cmd"}
 	   }
 	   continue 
 	} else {
@@ -252,10 +252,14 @@ proc execute_request {jmsg} {
 	  lappend code $line
 	}
     }
+    
     if {$error ne {}} {
 	slave eval [list puts stderr $error]
     } 
-    set code [join $code \n]    
+    set code [join $code \n]  
+    if {[string index [string trim $code] end] eq ";"} {
+	    dict set magics noresult 1
+    }   
     dict with magics {
         set time_result [time {
     	   set error [catch {slave eval $code} result]
