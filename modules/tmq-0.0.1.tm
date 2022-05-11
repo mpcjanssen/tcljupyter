@@ -81,7 +81,7 @@ namespace eval tmq {
   set greeting [binary decode hex [join [subst {
     ff00000000000000017f
     03
-    00
+    01
     [binary encode hex NULL]
     [string repeat 00 16]
     00
@@ -113,11 +113,14 @@ namespace eval tmq {
     fconfigure $channel -blocking 1 -encoding binary -translation binary
     puts "Incoming $type connection"
     # Negotiate version
-    sendchannel $name [string range $greeting 0 10]
+    puts -nonewline $channel [string range $greeting 0 10]
+    flush $channel
     set remote_greeting [read $channel 11]
     # puts "Remote greeting [display $remote_greeting]"
     # Send rest of greeting
-    sendchannel $name [string range $greeting 11 end]
+    puts -nonewline $channel [string range $greeting 11 end]
+    flush $channel
+
     append remote_greeting [read $channel [expr {64-11}]]
 
 
