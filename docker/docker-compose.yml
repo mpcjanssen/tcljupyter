@@ -8,10 +8,9 @@ services:
     ports:
       - "127.0.0.1:7005:8888"
     volumes:
-      - data:/data
+      - data:/my/local/notebooks
       - config:/config
     restart: unless-stopped
     
 volumes:
-   data:
    config:
