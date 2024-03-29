@@ -3,7 +3,7 @@ version: "2.1"
 services:
   fossil:
     container_name: tcljupyter
-    image: mpcjanssen/tcljupyter:0.0.1
+    image: mpcjanssen/tcljupyter:latest
     ports:
       - "127.0.0.1:7005:8888"
     volumes:
