@@ -12,7 +12,7 @@ if {[llength $argv] == 0} {
   puts [package require Thread]
   puts [package require rl_json]
   puts [package require zmq]
-  exit 1
+  exit 0
 }
 lassign $argv connection_file
 puts ">>>>>>>>>>>>>>>>>>>>>>>>> Kernel started, pid: [pid] <<<<<<<<<<<<<<<<<<<<<<<<<"

@@ -1,1 +1,1 @@
-{"argv":["tclsh","/Users/mpcjanssen/Src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message" }
+{"argv":["tclsh","/home/mpcjanssen/Src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message" }
