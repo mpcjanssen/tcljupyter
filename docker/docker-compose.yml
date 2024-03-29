@@ -1,7 +1,8 @@
 ---
 version: "2.1"
 services:
-  fossil:
+  tcljupyter:
+    user: 1000:1000
     container_name: tcljupyter
     image: mpcjanssen/tcljupyter:latest
     ports:
