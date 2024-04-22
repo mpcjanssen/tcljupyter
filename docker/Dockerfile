@@ -15,7 +15,8 @@ gem install  iruby &&\
 ${GEM_HOME}/bin/iruby register --force
 
 RUN apt-get update && apt-get install -y racket &&\
-raco pkg install --auto iracket
+raco pkg install --auto iracket &&\
+raco iracket install --jupyter-exe ${VENV}/bin/jupyter
 
 
 
