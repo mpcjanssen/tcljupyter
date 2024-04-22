@@ -13,6 +13,9 @@ python3 -m venv ${JL_VENV} && ${JL_VENV}/bin/pip install jupyterlab &&\
 gem install  iruby &&\
 iruby register --force
 
+RUN apt-get update && apt-get install -y racket &&\
+raco pkg install --auto iracket
+
 
 
 # Install tcljupyter
