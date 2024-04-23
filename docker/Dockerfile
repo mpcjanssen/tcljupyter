@@ -16,7 +16,7 @@ ${GEM_HOME}/bin/iruby register --force
 
 RUN apt-get update && apt-get install -y racket &&\
 raco pkg install --auto iracket &&\
-raco iracket install --jupyter-exe ${VENV}/bin/jupyter
+raco iracket install --jupyter-exe ${JL_VENV}/bin/jupyter
 
 
 
