@@ -9,6 +9,9 @@ Then change the paths in `kernel.json` to match your machine.
 
 Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
 
+### Docker
+The `docker*` folders contain `Dockerfile`s for building a tcljupyter container based on alpine or a bigger jupyter image with alsi IRuby and IRacket based on debian. Example `docker-compose.yml< files are added.
+
 ### Binder
 
 If you want to try it out without installation you can use the Binder version in the cloud.
