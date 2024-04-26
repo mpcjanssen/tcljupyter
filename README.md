@@ -10,7 +10,9 @@ Then change the paths in `kernel.json` to match your machine.
 Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
 
 ### Docker
-The `docker*` folders contain `Dockerfile`s for building a tcljupyter container based on alpine or a bigger jupyter image with alsi IRuby and IRacket based on debian. Example `docker-compose.yml< files are added.
+The `docker*` folders contain `Dockerfile`s for building a tcljupyter container based on alpine or a bigger jupyter image with additional IRuby and IRacket kernels based on debian. Example `docker-compose.yml` files are added.
+
+Prebuilt images for amd64 and arm64 are on [Docker Hub](https://hub.docker.com/repository/docker/mpcjanssen/tcljupyter).
 
 ### Binder
 
