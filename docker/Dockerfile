@@ -14,10 +14,10 @@ RUN \
 rm -Rf /var/cache/apt
 
 RUN \
---mount=type=cache,target=/root/.cache \
 python3 -m venv ${JL_VENV} && ${JL_VENV}/bin/pip install jupyterlab &&\
 gem install  iruby &&\
-${GEM_HOME}/bin/iruby register --force
+${GEM_HOME}/bin/iruby register --force &&\
+rm -Rf /root/.cache
 
 RUN \
 raco pkg install --auto iracket &&\
