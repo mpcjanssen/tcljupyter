@@ -9,12 +9,17 @@ ENV JL_PORT 8888
 ENV GEM_HOME /gems
 
 # Install packages
-RUN apt-get update && apt-get install -y python3 python3-dev python3-venv python3-pip tcl tcllib tcl-thread tcl-tls tdom build-essential tcl-dev uuid-dev libzmq3-dev git wget tcl tcllib tcl-thread tcl-tls tdom libsqlite3-tcl libtool libffi-dev ruby ruby-dev make &&\
+RUN \
+ apt-get update  && apt-get install -y python3 python3-dev python3-venv python3-pip tcl tcllib tcl-thread tcl-tls tdom build-essential tcl-dev uuid-dev libzmq3-dev git wget tcl tcllib tcl-thread tcl-tls tdom libsqlite3-tcl libtool libffi-dev ruby ruby-dev make racket &&\
+rm -Rf /var/cache/apt
+
+RUN \
+--mount=type=cache,target=/root/.cache \
 python3 -m venv ${JL_VENV} && ${JL_VENV}/bin/pip install jupyterlab &&\
 gem install  iruby &&\
 ${GEM_HOME}/bin/iruby register --force
 
-RUN apt-get update && apt-get install -y racket &&\
+RUN \
 raco pkg install --auto iracket &&\
 raco iracket install --jupyter-exe ${JL_VENV}/bin/jupyter
 
