@@ -2,10 +2,11 @@
 
 ## Installation
 
-Manually copy to a subdirectory of the kernels directory in a Jupyter data location (one of `jupyter --paths`). See the `kernel.json.win` or `kernel.json.linux` files for example paths.
+### local
 
-Copy one of the `kernel.json....` files to `kernel.json`.
-Then change the paths in `kernel.json` to match your machine.
+Run ./postBuild
+Install all the packages downloaded into the src folder.
+Manually copy the `kernel.json` to a subdirectory of the kernels directory in a Jupyter data location (one of `jupyter --paths`).
 
 Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
 
