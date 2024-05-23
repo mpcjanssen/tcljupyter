@@ -4,9 +4,9 @@
 
 ### local
 
-Run ./postBuild
-Install all the packages downloaded into the src folder.
-Manually copy the `kernel.json` to a subdirectory of the kernels directory in a Jupyter data location (one of `jupyter --paths`).
+- Run ./postBuild
+- Install all the packages downloaded into the src folder.
+- Manually copy the `kernel.json` to a subdirectory of the kernels directory in a Jupyter data location (one of `jupyter --paths`).
 
 Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
 
