@@ -19,7 +19,6 @@ Prebuilt images for amd64 and arm64 are on [Docker Hub](https://hub.docker.com/r
 If you want to try it out without installation you can use the Binder version in the cloud.
 
 - [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/binder?filepath=examples%2Fexample.ipynb) (with binary zmq library)
-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/tclonly?filepath=examples%2Fexample.ipynb) (with Tcl zmq)
 
 
 ### Dependencies
