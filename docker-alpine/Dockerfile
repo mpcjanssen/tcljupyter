@@ -12,7 +12,7 @@ ENV VENV /venv
 RUN \
     --mount=type=cache,target=/var/cache/apk \
     apk update &&\
-    apk add bash curl python3 git wget zeromq-dev gcc make python3-dev util-linux-dev musl-dev libffi-dev tar
+    apk add bash curl python3 git wget zeromq-dev gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil
 
 
 
@@ -57,6 +57,13 @@ RUN wget -q  https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O - | t
 cd ./tclzmq &&\
 ls &&\
 tclsh build.tcl install 
+
+# Install tclcurl
+
+RUN fossil clone https://fossil.mpcjanssen.nl/tclcurl --user=root &&\
+cd tclcurl &&\
+./configure --prefix=/usr &&\
+make && make install
 
 # Install
 RUN mkdir -p /root/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh8.6","/src/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message" }' > /root/.local/share/jupyter/kernels/tcl/kernel.json && mkdir -p ${CONFIG}
