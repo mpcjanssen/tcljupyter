@@ -12,9 +12,8 @@ ENV VENV /venv
 RUN \
     --mount=type=cache,target=/var/cache/apk \
     apk update &&\
-    apk add bash curl python3 git wget zeromq-dev gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil
-
-
+    apk add bash curl python3 git wget zeromq-dev gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil &&\
+    apk add nim nimble
 
 RUN python3 -m venv ${VENV}
 RUN \
