@@ -20,6 +20,7 @@ RUN python3 -m venv ${VENV}
 RUN \
     --mount=type=cache,target=/root/.cache \
     ${VENV}/bin/pip install jupyterlab &&\
+    ${VENV}/bin/pip install --upgrade jupyterlab-git &&\
     ${VENV}/bin/pip cache purge
 
 RUN \
