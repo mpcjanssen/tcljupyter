@@ -7,8 +7,10 @@ services:
     volumes:
       - notebooks:/notebooks
       - config:/config
+      - libs:/libs
     restart: unless-stopped
     
 volumes:
    config:
+   libs:
    notebooks:
