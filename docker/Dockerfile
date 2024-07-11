@@ -2,11 +2,11 @@
 #
 FROM alpine:edge
 
-ENV NOTEBOOKS /notebooks
-ENV CONFIG /config
-ENV PORT 8888
-ENV TCLLIBPATH /libs
-ENV VENV /venv
+ENV NOTEBOOKS=/notebooks
+ENV CONFIG=/config
+ENV PORT=8888
+ENV TCLLIBPATH=/libs
+ENV VENV=/venv
 
 # Install packages
 RUN \
@@ -19,7 +19,6 @@ RUN python3 -m venv ${VENV}
 RUN \
     --mount=type=cache,target=/root/.cache \
     ${VENV}/bin/pip install jupyterlab &&\
-    ${VENV}/bin/pip install --upgrade jupyterlab-git &&\
     ${VENV}/bin/pip cache purge
 
 RUN \

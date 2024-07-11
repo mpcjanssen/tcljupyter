@@ -14,6 +14,8 @@ array set ports {}
 set sessions {}
 set t {}
 
+zmq context context -io_threads 2
+
 proc connect {connection_file} {
     variable conn
     variable ports
@@ -21,7 +23,7 @@ proc connect {connection_file} {
     set conn [read $f]
     set key [json get $conn key]
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
-    zmq context context -io_threads 2
+
     starthb
     set ports(iopub) [zmq socket context PUB]
     $ports(iopub) bind [address iopub]
@@ -135,7 +137,7 @@ proc starthb {} {
     set t [thread::create]
     thread::send $t -async [list set auto_path $::auto_path]
     thread::send $t -async {package require zmq}
-    thread::send $t -async {zmq context context}
+
     thread::send $t -async [list zmq socket zsocket context REP]
     thread::send $t -async [list zsocket bind [address hb]]
     thread::send $t -async [list thread::wait]
