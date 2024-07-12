@@ -25,17 +25,63 @@ proc connect {connection_file} {
     puts $conn
 
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
-
-    listen shell ROUTER
-    listen control ROUTER
-    listen stdin ROUTER
-    listen iopub PUB
-    listen hb HEARTBEAT
+    zmq::bind ROUTER [json get $conn shell_port]  on_recv_shell
+    zmq::bind ROUTER [json get $conn control_port] on_recv_control
+    zmq::bind ROUTER [json get $conn stdin_port] on_recv_stdin
+    zmq::bind PUB [json get $conn iopub_port] on_recv_pub
+    zmq::bind HEARTBEAT [json get $conn hb_port]  on_recv_hb
 
     start [pid]
 }
 
-proc respond {name jmsg} {
+proc on_recv_shell {socket zmsg_type frames} {
+    puts "CCC on_recv_shell $zmsg_type"
+    if {$zmsg_type eq "msg"} {
+        # is this a Jupyter msg?
+        set index [lsearch $frames "<IDS|MSG>"]
+        if {$index != -1} {
+          set jmsg [jmsg::new $socket shell ROUTER {*}[lrange $frames $index end]]
+          on_recv_jmsg $socket $jmsg
+        } {
+          puts "WARN: Ignoring non-Jupyter zmq msg"	
+        }
+      } else {
+          puts "WARN: Ignoring zmq command"
+      } 
+}
+
+proc on_recv_control {socket zmsg_type frames} {
+    puts "CCC on_recv_control $zmsg_type"
+    if {$zmsg_type eq "msg"} {
+        # is this a Jupyter msg?
+        set index [lsearch $frames "<IDS|MSG>"]
+        if {$index != -1} {
+          set jmsg [jmsg::new $socket control ROUTER {*}[lrange $frames $index end]]
+          on_recv_jmsg $socket $jmsg
+        } {
+          puts "WARN: Ignoring non-Jupyter zmq msg"	
+        }
+      } else {
+          puts "WARN: Ignoring zmq command"
+      } 
+}
+
+proc on_recv_stdin {socket zmsgtype frames} {
+    puts "CCC on_recv_stdin"
+}
+
+proc on_recv_pub {socket zmsgtype frames} {
+    puts "CCC on_recv_pub"
+}
+
+
+proc on_recv_hb {socket zmsgtype frames} {
+    puts "CCC on_recv_hb"
+}
+
+
+
+proc respond {socket name jmsg} {
     variable key
     variable kernel_id
     dict with jmsg {
@@ -49,17 +95,18 @@ proc respond {name jmsg} {
         set zmsg [linsert $zmsg 0 $msg_type]
     }
     # puts "RESPOND to $name:"
-    tmq::send $name $zmsg
+    zmtp::sendzmsg $socket msg $zmsg
 }
 
-proc on_recv {jmsg} {
+proc on_recv_jmsg {socket jmsg} {
     variable t
+    puts $jmsg
     set session [jmsg::session $jmsg]
     set msg_type [jmsg::msg_type $jmsg]
     set name [jmsg::name $jmsg]
     # puts "on_recv $jmsg"
     if {$msg_type eq "kernel_info_request"} {
-        handle_info_request $jmsg
+        handle_info_request $socket $jmsg
         return
     }
     if {$msg_type eq "comm_info_request"} {
@@ -67,7 +114,7 @@ proc on_recv {jmsg} {
         return
     }
     if {$name eq "control"} {
-        handle_control_request $jmsg
+        handle_control_request $socket $jmsg
         return
     } 
 
@@ -132,7 +179,7 @@ proc address {port} {
     return $address
 }
 
-proc handle_control_request {jmsg} {
+proc handle_control_request {socket jmsg} {
     set shutdown 0
     variable t
     set ph [dict get $jmsg header]
@@ -144,6 +191,7 @@ proc handle_control_request {jmsg} {
         shutdown_request {
             set shutdown 1
             set reply_type shutdown_reply
+            exit
         }
         interrupt_request {
             set reply_type interrupt_reply
@@ -155,19 +203,19 @@ proc handle_control_request {jmsg} {
         set parent $ph
         json set header msg_type $reply_type
     }
-    respond control $jmsg
+    respond $socket control $jmsg
     if {$shutdown} {
         puts "Shutting down kernel [pid]"
         exit
     }
 }
 
-proc handle_info_request {jmsg} {
+proc handle_info_request {socket jmsg} {
     # puts "Handling info request: $jmsg"
     variable modver
     set parent [dict get $jmsg header]
     set channel [dict get $jmsg channel]
-    respond iopub [jmsg::status $parent busy]
+    respond $socket iopub [jmsg::status $parent busy]
     dict with jmsg {
         set parent $header
         set username [json get $header username]
@@ -179,8 +227,8 @@ proc handle_info_request {jmsg} {
 			"5.3"]
         set content [json template $::kernel_info]
     }
-    respond shell $jmsg
-    respond iopub [jmsg::status $parent idle]
+    respond $socket shell $jmsg
+    respond $socket iopub [jmsg::status $parent idle]
 }
 set kernel_info { {
     "status" : "ok",
