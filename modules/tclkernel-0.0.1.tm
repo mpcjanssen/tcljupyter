@@ -7,7 +7,6 @@ set script [file normalize [info script]]
 set modfile [file root [file tail $script]]
 lassign [split $modfile -] _ modver
 
-
 set conn {}
 set kernel_id  [uuid::uuid generate]
 
@@ -25,16 +24,17 @@ proc connect {connection_file} {
     puts $conn
 
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
-    zmq::bind ROUTER [json get $conn shell_port]  on_recv_shell
-    zmq::bind ROUTER [json get $conn control_port] on_recv_control
-    zmq::bind ROUTER [json get $conn stdin_port] on_recv_stdin
-    zmq::bind PUB [json get $conn iopub_port] on_recv_pub
-    zmq::bind HEARTBEAT [json get $conn hb_port]  on_recv_hb
+    zmq::bind shell ROUTER [json get $conn shell_port]  on_recv_shell
+    zmq::bind control ROUTER [json get $conn control_port] on_recv_control
+    zmq::bind stdin ROUTER [json get $conn stdin_port] on_recv_stdin
+    zmq::bind iopub PUB [json get $conn iopub_port] on_recv_pub
+    zmq::bind hb HEARTBEAT [json get $conn hb_port]  on_recv_hb
 
     start [pid]
 }
 
 proc on_recv_shell {socket zmsg_type frames} {
+    set ::ports(shell) $socket
     puts "CCC on_recv_shell $zmsg_type"
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
@@ -51,6 +51,7 @@ proc on_recv_shell {socket zmsg_type frames} {
 }
 
 proc on_recv_control {socket zmsg_type frames} {
+    set ::ports(control) $socket
     puts "CCC on_recv_control $zmsg_type"
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
@@ -66,12 +67,14 @@ proc on_recv_control {socket zmsg_type frames} {
       } 
 }
 
+
 proc on_recv_stdin {socket zmsgtype frames} {
     puts "CCC on_recv_stdin"
 }
 
 proc on_recv_pub {socket zmsgtype frames} {
     puts "CCC on_recv_pub"
+    set ::ports(iosub,$socket) 1
 }
 
 
@@ -81,7 +84,7 @@ proc on_recv_hb {socket zmsgtype frames} {
 
 
 
-proc respond {socket name jmsg} {
+proc respond {name jmsg} {
     variable key
     variable kernel_id
     dict with jmsg {
@@ -94,8 +97,15 @@ proc respond {socket name jmsg} {
         set msg_type [jmsg::msg_type $jmsg]
         set zmsg [linsert $zmsg 0 $msg_type]
     }
+    if {$name ne "iopub"} {
     # puts "RESPOND to $name:"
-    zmtp::sendzmsg $socket msg $zmsg
+        zmtp::sendzmsg $::ports($name) msg $zmsg
+    } else {
+        foreach sub [array names ::ports iosub,*] {
+            lassign [split $sub ,] _ socket 
+            zmtp::sendzmsg $socket msg $zmsg
+        }
+    }
 }
 
 proc on_recv_jmsg {socket jmsg} {
@@ -203,7 +213,7 @@ proc handle_control_request {socket jmsg} {
         set parent $ph
         json set header msg_type $reply_type
     }
-    respond $socket control $jmsg
+    respond control $jmsg
     if {$shutdown} {
         puts "Shutting down kernel [pid]"
         exit
@@ -215,7 +225,7 @@ proc handle_info_request {socket jmsg} {
     variable modver
     set parent [dict get $jmsg header]
     set channel [dict get $jmsg channel]
-    respond $socket iopub [jmsg::status $parent busy]
+    respond iopub [jmsg::status $parent busy]
     dict with jmsg {
         set parent $header
         set username [json get $header username]
@@ -227,8 +237,8 @@ proc handle_info_request {socket jmsg} {
 			"5.3"]
         set content [json template $::kernel_info]
     }
-    respond $socket shell $jmsg
-    respond $socket iopub [jmsg::status $parent idle]
+    respond shell $jmsg
+    respond iopub [jmsg::status $parent idle]
 }
 set kernel_info { {
     "status" : "ok",

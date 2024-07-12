@@ -82,7 +82,7 @@ proc display {mimetype body} {
     dict with response {
         set content [display_data $mimetype $body $id]
     }
-    respond  iopub $response
+    respond iopub $response
     return $id
 }
 

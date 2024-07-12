@@ -1,3 +1,7 @@
+proc debug {args} {
+  # puts {*}$args
+}
+
 namespace eval zmtp {
   proc greeting {} {
     set greeting [binary decode hex [join [subst {
@@ -53,8 +57,8 @@ namespace eval zmtp {
   
     }
 
-    proc connection {zmqtype frame_cb channel ip port} {
-      puts "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\nIncoming connection from $channel ($ip:$port) on $zmqtype socket"
+    proc connection {name zmqtype frame_cb channel ip port} {
+      puts "@@@@@@@ Incoming $name connection from $channel ($ip:$port) on $zmqtype socket"
       negotiate $channel
       handshake $channel $zmqtype
       fileevent $channel readable [namespace code  [list handle $channel $zmqtype $frame_cb]] 
@@ -101,13 +105,13 @@ namespace eval zmtp {
       }
       foreach frame [lrange $frames 0 end-1] {
         set zframe [zframe msg-more $frame]
-        puts " >>> msg-more [display $zframe]"
+        debug " >>> msg-more [display $zframe]"
         puts -nonewline $socket $zframe
         catch {flush $socket}
       }
       set frame [lindex $frames end]
       set zframe [zframe msg-last $frame]
-      puts " >>> msg-last [display $zframe]"
+      debug " >>> msg-last [display $zframe]"
       puts -nonewline $socket $zframe
       catch {flush $socket}
     }
@@ -174,7 +178,7 @@ namespace eval zmtp {
         }
         set frame [read $socket $bytelength]
 
-        puts " <<< $zmsg_type [display $prefix$length$frame]"
+        debug " <<< $zmsg_type [display $prefix$length$frame]"
         lappend frames $frame
       }
              puts "<<<<< [lindex [split $zmsg_type -] 0] frames: [llength $frames]"
@@ -208,7 +212,7 @@ namespace eval zmtp {
   }
 
   namespace eval zmq {
-    proc bind {type port frame_cb} {
-      socket -server [list zmtp::connection $type $frame_cb] $port
+    proc bind {name type port frame_cb} {
+      socket -server [list zmtp::connection $name $type $frame_cb] $port
     }
   }
