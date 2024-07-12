@@ -34,11 +34,14 @@ proc connect {connection_file} {
 
 proc on_recv_shell {socket zmsg_type frames} {
     puts "CCC on_recv_shell $zmsg_type"
+    set frames [encoding convertfrom utf-8 $frames]
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
         set index [lsearch $frames "<IDS|MSG>"]
         if {$index != -1} {
-          set jmsg [jmsg::new $socket shell ROUTER {*}[lrange $frames $index end]]
+            set content [lindex $frames end]
+            set content [encoding convertfrom utf-8 $content]
+          set jmsg [jmsg::new $socket shell ROUTER {*}[lrange $frames $index end-1] $content]
           on_recv_jmsg $socket $jmsg
         } {
           puts "WARN: Ignoring non-Jupyter zmq msg"	
@@ -49,12 +52,15 @@ proc on_recv_shell {socket zmsg_type frames} {
 }
 
 proc on_recv_control {socket zmsg_type frames} {
+    set frames [encoding convertfrom utf-8 $frames]
     puts "CCC on_recv_control $zmsg_type"
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
         set index [lsearch $frames "<IDS|MSG>"]
         if {$index != -1} {
-          set jmsg [jmsg::new $socket control ROUTER {*}[lrange $frames $index end]]
+            set content [lindex $frames end]
+            set content [encoding convertfrom utf-8 $content]
+          set jmsg [jmsg::new $socket control ROUTER {*}[lrange $frames $index end-1] $content]
           on_recv_jmsg $socket $jmsg
         } {
           puts "WARN: Ignoring non-Jupyter zmq msg"	
@@ -85,7 +91,6 @@ proc respond {name jmsg} {
     variable kernel_id
     dict with jmsg {
         json set header session $kernel_id
-        set hmac [hmac "[encoding convertto utf-8 $header$parent$metadata$content]"]
         # puts "HMAC: calculating for: [encoding convertto utf-8 $header$parent$metadata$content]\nHMAC: $hmac\nHMAC: [interp alias {} hmac]"
     }
     set zmsg [jmsg::znew $jmsg]

@@ -36,13 +36,15 @@ namespace eval jmsg {
         return $result
     }
     proc znew {jmsg} {
+        
         dict with jmsg {
+            set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]]
             set result $delimiter
             lappend result $hmac
             lappend result $header
             lappend result $parent
             lappend result $metadata
-            lappend result $content
+            lappend result [encoding convertto utf-8 $content]
             return $result
         }
     }

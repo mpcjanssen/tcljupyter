@@ -285,7 +285,7 @@ proc execute_request {jmsg} {
             }
 	    set response [jmsg::newiopub $ph execute_result]
 	    dict with response {
-		set content [encoding convertto utf-8 [execute_result $exec_counter $result]]
+		set content  [execute_result $exec_counter $result]
 	    }
 	    respond iopub $response
 	}
