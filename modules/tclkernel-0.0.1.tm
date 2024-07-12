@@ -10,7 +10,6 @@ lassign [split $modfile -] _ modver
 set conn {}
 set kernel_id  [uuid::uuid generate]
 
-array set ports {}
 set sessions {}
 set t {}
 
@@ -34,7 +33,6 @@ proc connect {connection_file} {
 }
 
 proc on_recv_shell {socket zmsg_type frames} {
-    set ::ports(shell) $socket
     puts "CCC on_recv_shell $zmsg_type"
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
@@ -51,7 +49,6 @@ proc on_recv_shell {socket zmsg_type frames} {
 }
 
 proc on_recv_control {socket zmsg_type frames} {
-    set ::ports(control) $socket
     puts "CCC on_recv_control $zmsg_type"
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
@@ -74,7 +71,6 @@ proc on_recv_stdin {socket zmsgtype frames} {
 
 proc on_recv_pub {socket zmsgtype frames} {
     puts "CCC on_recv_pub"
-    set ::ports(iosub,$socket) 1
 }
 
 
@@ -97,15 +93,8 @@ proc respond {name jmsg} {
         set msg_type [jmsg::msg_type $jmsg]
         set zmsg [linsert $zmsg 0 $msg_type]
     }
-    if {$name ne "iopub"} {
-    # puts "RESPOND to $name:"
-        zmtp::sendzmsg $::ports($name) msg $zmsg
-    } else {
-        foreach sub [array names ::ports iosub,*] {
-            lassign [split $sub ,] _ socket 
-            zmtp::sendzmsg $socket msg $zmsg
-        }
-    }
+    zmtp::sendzmsg $name msg $zmsg
+
 }
 
 proc on_recv_jmsg {socket jmsg} {

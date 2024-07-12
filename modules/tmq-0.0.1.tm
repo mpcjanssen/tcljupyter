@@ -2,7 +2,13 @@ proc debug {args} {
   # puts {*}$args
 }
 
+proc trace {args} {
+  # puts {*}$args
+}
+
 namespace eval zmtp {
+  array set ports {}
+
   proc greeting {} {
     set greeting [binary decode hex [join [subst {
       ff00000000000000017f
@@ -54,14 +60,20 @@ namespace eval zmtp {
       set zmqtype [string toupper $zmqtype]
       lassign [readzmsg $socket] type frames
       sendzmsg $socket cmd [list \x05READY\x0bSocket-Type[len32 $zmqtype]$zmqtype\x08Identity[len32 ""]]
-  
+
     }
 
     proc connection {name zmqtype frame_cb channel ip port} {
+      variable ports
+      if {$name ne "iopub"} {
+        set ports($name) $channel
+      } else {
+        set ports($name,$channel) 1
+      }
       puts "@@@@@@@ Incoming $name connection from $channel ($ip:$port) on $zmqtype socket"
       negotiate $channel
       handshake $channel $zmqtype
-      fileevent $channel readable [namespace code  [list handle $channel $zmqtype $frame_cb]] 
+      fileevent $channel readable [namespace code  [list handle $channel $zmqtype $frame_cb]]
     }
 
     proc zframe {ztype frame} {
@@ -85,35 +97,60 @@ namespace eval zmtp {
       }
     }
 
-    proc sendzmsg {socket ztype frames} {
+    proc sendframe {name frame} {
+      variable ports
+      switch -glob $name {
+        sock* {
+          catch {puts -nonewline $name $frame
+          flush $name}
+        } 
+        iopub {
+          foreach p [array names ports iopub,*] {
+              if {[catch {
+                lassign [split $p ,] _ socket
+                puts -nonewline $socket $frame
+                flush $socket
+              } err]} {
+                array unset ports($p)
+              }
+          }
+        }
+        default {
+          set socket $ports($name)
+          catch {puts -nonewline $socket $frame
+          flush $socket}
+        }
+      }
+    }
+
+    proc sendzmsg {name ztype frames} {
+      variable ports
+
       puts "-------------------------------------"
       puts ">>>>> $ztype frames: [llength $frames]"
       foreach f $frames {
-          puts [zmtp::display $f 1]
+        puts [zmtp::display $f 1]
       }
       # on the wire format is UTF-8
-      puts " >>> $socket"
+      puts " >>> $name"
       if {$ztype eq "cmd"} {
         if {[llength $frames]!=1} {
           return -error "zmq commands can only have one frame"
         }
         set zframe [zframe cmd [lindex $frames 0]]
-        puts " >>> cmd [display $zframe]"
-        puts -nonewline $socket $zframe
-        catch {flush $socket}
+        trace " >>> cmd [display $zframe]"
+        sendframe $name $zframe
         return
       }
       foreach frame [lrange $frames 0 end-1] {
         set zframe [zframe msg-more $frame]
-        debug " >>> msg-more [display $zframe]"
-        puts -nonewline $socket $zframe
-        catch {flush $socket}
+        trace " >>> msg-more [display $zframe]"
+        sendframe $name $zframe
       }
       set frame [lindex $frames end]
       set zframe [zframe msg-last $frame]
-      debug " >>> msg-last [display $zframe]"
-      puts -nonewline $socket $zframe
-      catch {flush $socket}
+      trace " >>> msg-last [display $zframe]"
+      sendframe $name $zframe
     }
 
 
@@ -121,16 +158,16 @@ namespace eval zmtp {
       puts "-------------------------------------"
       set more 1
       set frames {}
-          puts " <<< $socket"
+      trace " <<< $socket"
       while {$more} {
 
 
         set prefix [read $socket 1]
-          if {[eof $socket]} {
+        if {[eof $socket]} {
           puts "xxxxxxx: Socket $socket closed"
           fileevent $socket readable {}
           return
-      }
+        }
 
         switch -exact $prefix {
           \x00 {
@@ -178,22 +215,22 @@ namespace eval zmtp {
         }
         set frame [read $socket $bytelength]
 
-        debug " <<< $zmsg_type [display $prefix$length$frame]"
+        trace " <<< $zmsg_type [display $prefix$length$frame]"
         lappend frames $frame
       }
-             puts "<<<<< [lindex [split $zmsg_type -] 0] frames: [llength $frames]"
+      puts "<<<<< [lindex [split $zmsg_type -] 0] frames: [llength $frames]"
       foreach f $frames {
-          puts [zmtp::display $f 1]
-     }
-       puts +++++++++++++++++$zmsg_type
+        puts [zmtp::display $f 1]
+      }
+      puts +++++++++++++++++$zmsg_type
       return [list [lindex [split $zmsg_type -] 0] $frames]
     }
 
 
     proc handle {socket zmqtype frame_cb} {
-        lassign [readzmsg $socket] zmsgtype frames
-        puts ------------------$zmsgtype
-        $frame_cb $socket $zmsgtype $frames
+      lassign [readzmsg $socket] zmsgtype frames
+      puts ------------------$zmsgtype
+      $frame_cb $socket $zmsgtype $frames
     }
     proc zlen {str} {
       if {[string length $str] < 256} {

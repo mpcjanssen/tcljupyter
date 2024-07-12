@@ -1,0 +1,15 @@
+---
+services:
+  tcljupyter:
+    user: 1000:1000
+    container_name: tcljupyter
+    image: mpcjanssen/tcljupyter:alpine
+    ports:
+      - "127.0.0.1:7005:8888"
+    volumes:
+      - /my/local/notebooks:/notebooks
+      - config:/config
+    restart: unless-stopped
+    
+volumes:
+   config:
