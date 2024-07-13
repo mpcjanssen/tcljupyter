@@ -33,7 +33,7 @@ proc connect {connection_file} {
 }
 
 proc on_recv_shell {socket zmsg_type frames} {
-    puts "CCC on_recv_shell $zmsg_type"
+    # puts "CCC on_recv_shell $zmsg_type"
     set frames [encoding convertfrom utf-8 $frames]
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
@@ -53,7 +53,7 @@ proc on_recv_shell {socket zmsg_type frames} {
 
 proc on_recv_control {socket zmsg_type frames} {
     set frames [encoding convertfrom utf-8 $frames]
-    puts "CCC on_recv_control $zmsg_type"
+    # puts "CCC on_recv_control $zmsg_type"
     if {$zmsg_type eq "msg"} {
         # is this a Jupyter msg?
         set index [lsearch $frames "<IDS|MSG>"]
@@ -73,15 +73,15 @@ proc on_recv_control {socket zmsg_type frames} {
 
 proc on_recv_stdin {socket zmsgtype frames} {
     puts "CCC on_recv_stdin"
-}
+# }
 
 proc on_recv_pub {socket zmsgtype frames} {
-    puts "CCC on_recv_pub"
+    # puts "CCC on_recv_pub"
 }
 
 
 proc on_recv_hb {socket zmsgtype frames} {
-    puts "CCC on_recv_hb"
+    # puts "CCC on_recv_hb"
 }
 
 
@@ -104,7 +104,7 @@ proc respond {name jmsg} {
 
 proc on_recv_jmsg {socket jmsg} {
     variable t
-    puts $jmsg
+    # puts $jmsg
     set session [jmsg::session $jmsg]
     set msg_type [jmsg::msg_type $jmsg]
     set name [jmsg::name $jmsg]

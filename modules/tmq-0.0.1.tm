@@ -48,12 +48,12 @@ namespace eval zmtp {
       puts -nonewline $channel [string range $greeting 0 10]
       flush $channel
       set remote_greeting [read $channel 11]
-      # puts "Remote greeting [display $remote_greeting]"
+      debug "Remote greeting [display $remote_greeting]"
       # Send rest of greeting
       puts -nonewline $channel [string range $greeting 11 end]
       flush $channel
       append remote_greeting [read $channel [expr {64-11}]]
-      puts "Remote greeting [display $remote_greeting]"
+      debug "Remote greeting [display $remote_greeting]"
     }
 
     proc handshake {socket zmqtype} {
@@ -70,7 +70,7 @@ namespace eval zmtp {
       } else {
         set ports($name,$channel) 1
       }
-      puts "@@@@@@@ Incoming $name connection from $channel ($ip:$port) on $zmqtype socket"
+      debug "@@@@@@@ Incoming $name connection from $channel ($ip:$port) on $zmqtype socket"
       negotiate $channel
       handshake $channel $zmqtype
       fileevent $channel readable [namespace code  [list handle $channel $zmqtype $frame_cb]]
@@ -126,13 +126,13 @@ namespace eval zmtp {
     proc sendzmsg {name ztype frames} {
       variable ports
 
-      puts "-------------------------------------"
-      puts ">>>>> $ztype frames: [llength $frames]"
+      debug "-------------------------------------"
+      debug ">>>>> $ztype frames: [llength $frames]"
       foreach f $frames {
-        puts [zmtp::display $f 1]
+        debug [zmtp::display $f 1]
       }
       # on the wire format is UTF-8
-      puts " >>> $name"
+      debug " >>> $name"
       if {$ztype eq "cmd"} {
         if {[llength $frames]!=1} {
           return -error "zmq commands can only have one frame"
@@ -155,7 +155,7 @@ namespace eval zmtp {
 
 
     proc readzmsg {socket} {
-      puts "-------------------------------------"
+      debug  "-------------------------------------"
       set more 1
       set frames {}
       trace " <<< $socket"
@@ -164,7 +164,7 @@ namespace eval zmtp {
 
         set prefix [read $socket 1]
         if {[eof $socket]} {
-          puts "xxxxxxx: Socket $socket closed"
+          debug "xxxxxxx: Socket $socket closed"
           fileevent $socket readable {}
           return
         }
@@ -218,18 +218,18 @@ namespace eval zmtp {
         trace " <<< $zmsg_type [display $prefix$length$frame]"
         lappend frames $frame
       }
-      puts "<<<<< [lindex [split $zmsg_type -] 0] frames: [llength $frames]"
+      debug "<<<<< [lindex [split $zmsg_type -] 0] frames: [llength $frames]"
       foreach f $frames {
-        puts [zmtp::display $f 1]
+        debug [zmtp::display $f 1]
       }
-      puts +++++++++++++++++$zmsg_type
+      debug +++++++++++++++++$zmsg_type
       return [list [lindex [split $zmsg_type -] 0] $frames]
     }
 
 
     proc handle {socket zmqtype frame_cb} {
       lassign [readzmsg $socket] zmsgtype frames
-      puts ------------------$zmsgtype
+      debug ------------------$zmsgtype
       $frame_cb $socket $zmsgtype $frames
     }
     proc zlen {str} {
