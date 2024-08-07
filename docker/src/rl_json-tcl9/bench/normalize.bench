@@ -1,0 +1,30 @@
+if {"bench" ni [info commands bench]} {
+	package require bench
+	namespace import bench::*
+}
+
+package require rl_json
+#package require yajltcl
+
+namespace import rl_json::json
+
+proc main {} {
+bench normalize-1.1 {Normalize a JSON doc} -setup { #<<<
+	set json {
+		{
+			"foo": "bar",
+			"baz": ["str", 123, 123.4, true, false, null, {"inner": "obj"}]
+		}
+	}
+} -compare {
+	ours {
+		json normalize [string trim $json]
+	}
+} -cleanup {
+	unset -nocomplain json
+} -result {{"foo":"bar","baz":["str",123,123.4,true,false,null,{"inner":"obj"}]}}
+#>>>
+}
+main
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4

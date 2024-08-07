@@ -1,0 +1,138 @@
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require rl_json
+namespace path {::rl_json}
+
+proc readbin fn {
+	set h	[open $fn rb]
+	try {read $h} finally {close $h}
+}
+
+foreach file [glob -nocomplain -type f [file join [file dirname [info script]] JSONTestSuite test_parsing *.json]] {
+	if {![regexp {/([yni])_([^/]+)\.json$} $file - expected name]} {
+		puts stderr "Could not interpret test case filename \"$file\""
+		continue
+	}
+
+	set encoding	auto
+
+	# outcomes overrides: comments, etc
+	switch -- $name {
+		object_trailing_comment_slash_open -
+		structure_object_with_comment -
+		object_trailing_comment {
+			# Comments are supported by default, but can be disabled - test both
+			set expected comment
+		}
+
+		string_utf16BE_no_BOM {
+			# UTF-16 files without a BOM need an out-of-band signal to indicate the encoding
+			set encoding utf-16be
+		}
+
+		string_utf16LE_no_BOM {
+			# UTF-16 files without a BOM need an out-of-band signal to indicate the encoding
+			set encoding utf-16le
+		}
+	}
+
+	set cmd	[list test jsontestsuite-$name ${expected}_$name -match glob -result * -body]
+	lappend cmd	[string map [list %file% [list $file] %encoding% [list $encoding]] {
+		json normalize [json decode [readbin %file%] %encoding%]
+	}]
+	if {$expected eq "n"} {
+		lappend cmd -returnCodes error
+	}
+	{*}$cmd
+
+	switch -- $expected {
+		y - i {
+			set cmd	[list test jsontestsuite_valid-$name ${expected}_$name -result 1 -body]
+			lappend cmd	[string map [list %file% [list $file] %encoding% [list $encoding]] {
+				json valid [json decode [readbin %file%] %encoding%]
+			}]
+			{*}$cmd
+		}
+
+		n {
+			set cmd	[list test jsontestsuite_valid-$name ${expected}_$name -result 0 -body]
+			lappend cmd	[string map [list %file% [list $file] %encoding% [list $encoding]] {
+				json valid [json decode [readbin %file%] %encoding%]
+			}]
+			{*}$cmd
+		}
+
+		comment {
+			set cmd	[list test jsontestsuite_valid-$name-1 ${expected}_$name -result 0 -body]
+			lappend cmd	[string map [list %file% [list $file] %encoding% [list $encoding]] {
+				json valid -extensions {} [json decode [readbin %file%] %encoding%]
+			}]
+			{*}$cmd
+
+			set cmd	[list test jsontestsuite_valid-$name-2 ${expected}_$name -result 1 -body]
+			lappend cmd	[string map [list %file% [list $file] %encoding% [list $encoding]] {
+				json valid -extensions {comments} [json decode [readbin %file%] %encoding%]
+			}]
+			{*}$cmd
+		}
+
+		default {
+			error "Unexpected expected value: \"$expected\""
+		}
+	}
+}
+
+foreach file [glob -nocomplain -type f [file join [file dirname [info script]] JSONTestSuite test_transform *.json]] {
+	if {![regexp {/([^/]+)\.json$} $file - name]} {
+		puts stderr "Could not interpret test case filename \"$file\""
+		continue
+	}
+
+	set encoding	auto
+
+	set result		[string trim [json decode [readbin $file]]]
+
+	# Overrides for our intended behaviours in various situations
+	switch -- $name {
+		object_same_key_different_values {
+			# Duplicate keys in object - later replaces earlier
+			set result {{"a":2}}
+		}
+		object_same_key_unclear_values {
+			set result {{"a":-0}}
+		}
+		object_same_key_same_value {
+			set result {{"a":1}}
+		}
+
+		string_1_escaped_invalid_codepoint {
+			# Replace each maximal subpart of the ill-formed sequence by a single U+FFFD (option 2 of http://unicode.org/review/pr-121.html)
+			set result "\[\"\uFFFD\"\]"
+		}
+		string_2_escaped_invalid_codepoints {
+			set result "\[\"\uFFFD\uFFFD\"\]"
+		}
+		string_3_escaped_invalid_codepoints {
+			set result "\[\"\uFFFD\uFFFD\uFFFD\"\]"
+		}
+
+		default {}
+	}
+
+	set cmd	[list test jsontestsuite-$name $name -result $result -body]
+	lappend cmd	[string map [list %file% [list $file] %encoding% [list $encoding]] {
+		json normalize [json decode [readbin %file%] %encoding%]
+	}]
+
+	{*}$cmd
+}
+
+::tcltest::cleanupTests
+return
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
+
+

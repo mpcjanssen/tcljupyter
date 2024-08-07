@@ -13,7 +13,7 @@ RUN \
     --mount=type=cache,target=/var/cache/apk \
     apk update &&\
     apk add bash curl python3 git wget zeromq-dev gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil &&\
-    apk add nim nimble
+    apk add nim nimble bsd-compat-headers
 
 RUN python3 -m venv ${VENV}
 RUN \
@@ -21,10 +21,17 @@ RUN \
     ${VENV}/bin/pip install jupyterlab &&\
     ${VENV}/bin/pip cache purge
 
-RUN \
-    --mount=type=cache,target=/var/cache/apk \
-    apk update &&\
-    apk add tcl-dev tcl-tls tcl-lib
+
+# Install tcl8
+RUN apk add minizip
+RUN mkdir /tcl9
+COPY tcl9.0b3-src.tar.gz /tcl9
+WORKDIR /tcl9
+RUN tar xvf tcl9.0b3-src.tar.gz
+RUN cd tcl9.0b3/unix &&\
+./configure --prefix=/usr --disable-zipfs &&\
+make install
+
 
 # Install tcljupyter
 RUN mkdir /src
@@ -32,6 +39,8 @@ WORKDIR /src
 RUN git clone https://github.com/mpcjanssen/tcljupyter .
 
 # Install rl_json
+RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+  libtommath-dev
 RUN wget -q https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O - | tar zvx --one-top-level=rl_json --strip-components 1 &&\
 cd ./rl_json &&\
 ./configure --prefix=/usr &&\

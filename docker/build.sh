@@ -1,1 +1,1 @@
-docker build -t mpcjanssen/tcljupyter:alpine --push .
+docker build -t mpcjanssen/tcljupyter:tcl9 --push .

@@ -1,0 +1,3 @@
+#define TDBC_ODBC_VERSION_UUID \
+f4ef379bf103da798231d0b12eae2d32d365cafcf26e34f3aea365e4d61dd942
+

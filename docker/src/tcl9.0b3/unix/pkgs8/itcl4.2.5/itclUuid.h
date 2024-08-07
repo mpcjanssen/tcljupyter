@@ -1,0 +1,3 @@
+#define ITCL_VERSION_UUID \
+aa224f01ddc2f3bff9b9c3cd428ab6b622512a6b41b156b5e4c9301c63c8c11b
+

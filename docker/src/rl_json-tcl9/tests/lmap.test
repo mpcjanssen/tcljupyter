@@ -1,0 +1,246 @@
+if {"::tcltest" ni [namespace children]} {
+	package require tcltest
+	namespace import ::tcltest::*
+}
+
+package require rl_json
+namespace path {::rl_json}
+
+test lmap-1.0 {Single iterator, no vars, over array} -body { #<<<
+	json lmap {} {["a", "b", "other var", null, true, false, {"x": 42}]} {}
+} -returnCodes error -result "foreach varlist is empty"
+#>>>
+test lmap-1.1 {Single iterator, single var, over array} -setup { #<<<
+	set i	0
+} -body {
+	json lmap elem {["a", "b", "other var", null, true, false, {"x": 42}]} {
+		string cat [incr i]($elem)([json get $elem])
+	}
+} -cleanup {
+	unset -nocomplain i elem
+} -result [list \
+	"1(\"a\")(a)" \
+	"2(\"b\")(b)" \
+	"3(\"other var\")(other var)" \
+	"4(null)()" \
+	"5(true)(1)" \
+	"6(false)(0)" \
+	"7({\"x\":42})(x 42)" \
+]
+#>>>
+test lmap-2.1 {Single iterator, multi vars, over array} -setup { #<<<
+	set i	0
+} -body {
+	json lmap {x y} {["a", "b", "other var", null, true, false, {"x": 42}, 42.1, "last"]} {
+		string cat [incr i] \
+			($x)([json get $x]) \
+			($y)([json get $y])
+	}
+} -cleanup {
+	unset -nocomplain i x y
+} -result [list \
+	"1(\"a\")(a)(\"b\")(b)" \
+	"2(\"other var\")(other var)(null)()" \
+	"3(true)(1)(false)(0)" \
+	"4({\"x\":42})(x 42)(42.1)(42.1)" \
+	"5(\"last\")(last)(null)()" \
+]
+#>>>
+test lmap-3.0 {Multiple iterators, no vars, over array} -body { #<<<
+	json lmap \
+		elem  {["a", "b", "other var", null, true, false, {"x": 42}]} \
+		{}    {["A", "B", "OTHER VAR", null, true, {"X": 42}]} \
+	{}
+} -cleanup {
+	unset -nocomplain elem
+} -returnCodes error -result "foreach varlist is empty"
+#>>>
+test lmap-3.1 {Multiple iterators, single var, over array} -setup { #<<<
+	set i	0
+} -body {
+	json lmap \
+		elem  {["a", "b", "other var", null, true, false, {"x": 42}]} \
+		elem2 {["A", "B", "OTHER VAR", null, true, {"X": 42}]} \
+	{
+		string cat [incr i]($elem)([json get $elem])/($elem2)([json get $elem2])
+	}
+} -cleanup {
+	unset -nocomplain i elem elem2
+} -result [list \
+	1("a")(a)/("A")(A) \
+	2("b")(b)/("B")(B) \
+	{3("other var")(other var)/("OTHER VAR")(OTHER VAR)} \
+	4(null)()/(null)() \
+	5(true)(1)/(true)(1) \
+	"6(false)(0)/({\"X\":42})(X 42)" \
+	"7({\"x\":42})(x 42)/(null)()" \
+]
+#>>>
+test lmap-4.1 {Multiple iterators, multi vars, over array} -setup { #<<<
+	set i	0
+} -body {
+	json lmap \
+		{x y} {["a", "b", "other var", null, true, false, {"x": 42}, 42.1]} \
+		{a b} {["A", "B", "OTHER VAR", null, true, {"X": 42}, 42.1]} \
+	{
+		string cat [incr i] \
+			($x)([json get $x]) \
+			($y)([json get $y]) \
+			/ \
+			($a)([json get $a]) \
+			($b)([json get $b])
+	}
+} -cleanup {
+	unset -nocomplain i x y a b
+} -result [list \
+	"1(\"a\")(a)(\"b\")(b)/(\"A\")(A)(\"B\")(B)" \
+	"2(\"other var\")(other var)(null)()/(\"OTHER VAR\")(OTHER VAR)(null)()" \
+	"3(true)(1)(false)(0)/(true)(1)({\"X\":42})(X 42)" \
+	"4({\"x\":42})(x 42)(42.1)(42.1)/(42.1)(42.1)(null)()" \
+]
+#>>>
+test lmap-5.1 {Single iterator, single var, over array, continue} -setup { #<<<
+	set i	0
+} -body {
+	json lmap elem {["a", "b", "other var", null, true, false, {"x": 42}]} {
+		if {[json get $elem] eq ""} continue
+		string cat [incr i]($elem)([json get $elem])
+	}
+} -cleanup {
+	unset -nocomplain i elem
+} -result [list \
+	"1(\"a\")(a)" \
+	"2(\"b\")(b)" \
+	"3(\"other var\")(other var)" \
+	"4(true)(1)" \
+	"5(false)(0)" \
+	"6({\"x\":42})(x 42)" \
+]
+#>>>
+test lmap-5.1.1 {Single iterator, single var, over array, continue on final iteration} -setup { #<<<
+	set i	0
+} -body {
+	json lmap elem {["a", "b", "other var", null]} {
+		if {[json get $elem] eq ""} continue
+		string cat [incr i]($elem)([json get $elem])
+	}
+} -cleanup {
+	unset -nocomplain i elem
+} -result [list \
+	"1(\"a\")(a)" \
+	"2(\"b\")(b)" \
+	"3(\"other var\")(other var)" \
+]
+#>>>
+test lmap-6.1 {Single iterator, single var, over array, break} -setup { #<<<
+	set i	0
+} -body {
+	json lmap elem {["a", "b", "other var", null, true, false, {"x": 42}]} {
+		if {[json get $elem] eq ""} break
+		string cat [incr i]($elem)([json get $elem])
+	}
+} -cleanup {
+	unset -nocomplain i elem
+} -result [list \
+	"1(\"a\")(a)" \
+	"2(\"b\")(b)" \
+	"3(\"other var\")(other var)" \
+]
+#>>>
+test lmap-6.2 {Single iterator, single var, over array, return} -setup { #<<<
+	set i	0
+} -body {
+	json lmap elem {["a", "b", "other var", null, true, false, {"x": 42}]} {
+		if {[json get $elem] eq ""} {return returned}
+		string cat [incr i]($elem)([json get $elem])
+	}
+} -cleanup {
+	unset -nocomplain i elem
+} -result returned
+#>>>
+
+test lmap-7.1 {Single iterator, single var, over null} -setup { #<<<
+	set i	0
+} -body {
+	json lmap elem null { incr i }
+} -cleanup {
+	unset -nocomplain i elem
+} -result {}
+#>>>
+test lmap-7.2 {Single iterator, single var, over empty array} -setup { #<<<
+	set i	0
+} -body {
+	json lmap elem {[]} { incr i }
+} -cleanup {
+	unset -nocomplain i elem
+} -result {}
+#>>>
+test lmap-7.3 {Single iterator, multi vars, over null} -setup { #<<<
+	set i	0
+} -body {
+	json lmap {x y} null { incr i }
+} -cleanup {
+	unset -nocomplain i x y
+} -result {}
+#>>>
+test lmap-8.1 {Multiple iterators, single var, over null} -setup { #<<<
+	set i	0
+} -body {
+	json lmap \
+		elem  {["a", "b", "other var", null, true, false, {"x": 42}]} \
+		elem2 {null} \
+	{
+		string cat [incr i]($elem)([json get $elem])/($elem2)([json get $elem2])
+	}
+} -cleanup {
+	unset -nocomplain i elem elem2
+} -result [list \
+	1("a")(a)/(null)() \
+	2("b")(b)/(null)() \
+	{3("other var")(other var)/(null)()} \
+	4(null)()/(null)() \
+	5(true)(1)/(null)() \
+	"6(false)(0)/(null)()" \
+	"7({\"x\":42})(x 42)/(null)()" \
+]
+#>>>
+test lmap-8.2 {Multiple iterators, single var, over empty array} -setup { #<<<
+	set i	0
+	set res	{}
+} -body {
+	json lmap \
+		elem  {["a", "b", "other var", null, true, false, {"x": 42}]} \
+		elem2 {[]} \
+	{
+		string cat [incr i]($elem)([json get $elem])/($elem2)([json get $elem2])
+	}
+} -cleanup {
+	unset -nocomplain i elem elem2
+} -result [list \
+	1("a")(a)/(null)() \
+	2("b")(b)/(null)() \
+	{3("other var")(other var)/(null)()} \
+	4(null)()/(null)() \
+	5(true)(1)/(null)() \
+	"6(false)(0)/(null)()" \
+	"7({\"x\":42})(x 42)/(null)()" \
+]
+#>>>
+
+test lmap-20.5 {too few args} -body { #<<<
+	list [catch {json lmap x {[]}} r o] $r [dict get $o -errorcode]
+} -cleanup {
+	unset -nocomplain x y r o
+} -result {1 {wrong # args: should be "*lmap ?varlist datalist ...? script"} {TCL WRONGARGS}} -match glob
+#>>>
+test lmap-20.6 {too many args} -body { #<<<
+	list [catch {json lmap x {[]} y {}} r o] $r [dict get $o -errorcode]
+} -cleanup {
+	unset -nocomplain x y r o
+} -result {1 {wrong # args: should be "*lmap ?varlist datalist ...? script"} {TCL WRONGARGS}} -match glob
+#>>>
+
+::tcltest::cleanupTests
+return
+
+# vim: ft=tcl foldmethod=marker foldmarker=<<<,>>> ts=4 shiftwidth=4
