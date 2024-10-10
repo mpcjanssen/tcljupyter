@@ -217,7 +217,7 @@ proc handle_info_request {jmsg} {
 			$version \
 			$modver \
 			"5.3"]
-        set content [json template $::kernel_info]
+        set content [subst -nocommands $::kernel_info]
     }
     respond $jmsg
     respond [jmsg::status $parent idle]
@@ -226,14 +226,14 @@ set kernel_info { {
     "status" : "ok",
     "protocol_version": "5.3",
     "implementation": "tcljupyter",
-    "implementation_version": "~S:modver",
+    "implementation_version": "$modver",
     "language_info": {
         "name": "tcl",
-        "version": "~S:version",
+        "version": "$version",
         "mimetype": "txt/x-tcl",
         "file_extension": ".tcl"
     },
-    "banner" : "~S:banner"
+    "banner" : "$banner"
 }}
 
 

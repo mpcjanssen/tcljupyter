@@ -5,11 +5,11 @@ namespace eval jmsg {
     proc newheader {username msg_type} {
         set msg_id [newid]
         set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
-        json template {
-            {"msg_id":"~S:msg_id",
-                "msg_type":"~S:msg_type",
-                "username":"~S:username",
-                "date":"~S:date",
+        [subst --nocommands {
+            {"msg_id":"$msg_id",
+                "msg_type":"$msg_type",
+                "username":"$username",
+                "date":"$date",
                 "version":"5.3"
             }
         }  
@@ -71,7 +71,7 @@ proc newiopub {parent msg_type} {
 proc status {parent state} {
     set jmsg [newiopub $parent status]
     dict with jmsg {
-	set content [json template {{"execution_state" : "~S:state"}}]   
+	set content [subst -nocommands {{"execution_state" : "$status"}}]   
     }
     return $jmsg    
 }
