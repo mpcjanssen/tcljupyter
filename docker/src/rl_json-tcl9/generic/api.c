@@ -1373,9 +1373,9 @@ int JSON_Valid(Tcl_Interp* interp, Tcl_Obj* json, int* valid, enum extensions ex
 #if 1
 	// Snoop on the intrep for clues on optimized conversions {{{
 	{
+
 		if (
 			l && (
-				(l->typeInt    && Tcl_FetchIntRep(json, l->typeInt)    != NULL) ||
 				(l->typeDouble && Tcl_FetchIntRep(json, l->typeDouble) != NULL) ||
 				(l->typeBignum && Tcl_FetchIntRep(json, l->typeBignum) != NULL)
 			)

@@ -43,11 +43,11 @@ struct parse_context {
 };
 
 struct foreach_iterator {
-	int				data_c;
+	Tcl_Size		data_c;
 	Tcl_Obj**		data_v;
-	int				data_i;
+	Tcl_Size		data_i;
 	Tcl_Obj*		varlist;
-	int				var_c;
+	Tcl_Size		var_c;
 	Tcl_Obj**		var_v;
 	int				is_array;
 
@@ -184,7 +184,6 @@ struct interp_cx {
 #endif
 	const Tcl_ObjType*	typeDict;		// Evil hack to identify objects of type dict, used to choose whether to iterate over a list of pairs as a dict or a list, for efficiency
 
-	const Tcl_ObjType*	typeInt;		// Evil hack to snoop on the type of a number, so that we don't have to add 0 to a candidate to know if it's a valid number
 	const Tcl_ObjType*	typeDouble;
 	const Tcl_ObjType*	typeBignum;
 	Tcl_Obj*		apply;

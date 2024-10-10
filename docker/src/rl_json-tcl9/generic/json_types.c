@@ -314,7 +314,7 @@ static void dup_internal_rep(Tcl_Obj* src, Tcl_Obj* dest, Tcl_ObjType* objtype) 
 		Tcl_Panic("dup_internal_rep asked to duplicate for type, but that type wasn't available on the src object");
 
 	if (src == srcir->twoPtrValue.ptr1) {
-		int			len;
+		Tcl_Size len;
 		const char*	str = Tcl_GetStringFromObj((Tcl_Obj*)srcir->twoPtrValue.ptr1, &len);
 		// Don't know how this happens yet, but it's bad news - we get into an endless recursion of duplicateobj calls until the stack blows up
 
@@ -383,7 +383,7 @@ static void update_string_rep_number(Tcl_Obj* obj) //{{{
 {
 	Tcl_ObjIntRep*	ir = Tcl_FetchIntRep(obj, &json_number);
 	const char*		str;
-	int				len;
+	Tcl_Size				len;
 
 	if (ir->twoPtrValue.ptr1 == obj)
 		Tcl_Panic("Turtles all the way down!");
@@ -457,7 +457,7 @@ static int set_from_any(Tcl_Interp* interp, Tcl_Obj* obj, Tcl_ObjType** objtype,
 	const unsigned char*	p;
 	const unsigned char*	e;
 	const unsigned char*	val_start;
-	int						len;
+	Tcl_Size len;
 	struct parse_context	cx[CX_STACK_SIZE];
 	enum extensions			extensions = EXT_COMMENTS;
 	struct parse_error		details = {};
@@ -470,7 +470,6 @@ static int set_from_any(Tcl_Interp* interp, Tcl_Obj* obj, Tcl_ObjType** objtype,
 	{
 		if (
 			l && (
-				(l->typeInt    && Tcl_FetchIntRep(obj, l->typeInt)    != NULL) ||
 				(l->typeDouble && Tcl_FetchIntRep(obj, l->typeDouble) != NULL) ||
 				(l->typeBignum && Tcl_FetchIntRep(obj, l->typeBignum) != NULL)
 			)

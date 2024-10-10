@@ -155,8 +155,8 @@ display *obj
 	if (l) {
 		// Attempt to snoop on the intrep to verify that it is one of the numeric types
 		if (
+
 			obj->typePtr && (
-				(l->typeInt    && Tcl_FetchIntRep(obj, l->typeInt) != NULL) ||
 				(l->typeDouble && Tcl_FetchIntRep(obj, l->typeDouble) != NULL) ||
 				(l->typeBignum && Tcl_FetchIntRep(obj, l->typeBignum) != NULL)
 		   )
@@ -167,7 +167,7 @@ display *obj
 
 			if (Tcl_HasStringRep(obj)) { // Has a string rep already, make sure it's not hex or octal, and not padded with whitespace
 				const char* 	s;
-				Tcl_Siz		len, start=0;
+				Tcl_Size	len, start=0;
 
 				s = Tcl_GetStringFromObj(obj, &len);
 				if (len >= 1 && s[0] == '-')
@@ -576,7 +576,7 @@ int serialize(Tcl_Interp* interp, struct serialize_context* scx, Tcl_Obj* obj) /
 static int get_modifier(Tcl_Interp* interp, Tcl_Obj* modobj, enum modifiers* modifier) //{{{
 {
 	// This must be kept in sync with the modifiers enum
-	static CONST char *modstrings[] = {
+	static const char *modstrings[] = {
 		"",
 		"?length",
 		"?size",
@@ -1159,7 +1159,7 @@ done:
 static int foreach(Tcl_Interp* interp, int objc, Tcl_Obj *const objv[], enum collecting_mode collecting) //{{{
 {
 	// Caller must ensure that objc is valid
-	unsigned int			i;
+	Tcl_Size	i;
 	int						retcode=TCL_OK;
 	struct foreach_state*	state = NULL;
 
@@ -1198,7 +1198,7 @@ static int foreach(Tcl_Interp* interp, int objc, Tcl_Obj *const objv[], enum col
 	}
 
 	for (i=0; i<state->iterators; i++) {
-		int				loops, j;
+		Tcl_Size		loops, j;
 		enum json_types	type;
 		Tcl_Obj*		val;
 		Tcl_Obj*		varlist = objv[i*2];
@@ -1268,12 +1268,12 @@ done:
 //}}}
 int json_pretty(Tcl_Interp* interp, Tcl_Obj* json, Tcl_Obj* indent, Tcl_Obj* pad, Tcl_DString* ds) //{{{
 {
-	int							indent_len, pad_len, next_pad_len, count;
+	Tcl_Size				indent_len, pad_len, next_pad_len, count;
 	enum json_types				type;
-	const char*					pad_str;
-	const char*					next_pad_str;
-	Tcl_Obj*					next_pad = NULL;
-	Tcl_Obj*					val;
+	const char*				pad_str;
+	const char*				next_pad_str;
+	Tcl_Obj*				next_pad = NULL;
+	Tcl_Obj*				val;
 	struct serialize_context	scx;
 	int							retval = TCL_OK;
 
@@ -1291,7 +1291,8 @@ int json_pretty(Tcl_Interp* interp, Tcl_Obj* json, Tcl_Obj* indent, Tcl_Obj* pad
 	switch (type) {
 		case JSON_OBJECT: //{{{
 			{
-				int				done, k_len, max=0, size;
+				int				done;
+			        Tcl_Size		k_len, max=0, size;
 				Tcl_DictSearch	search;
 				Tcl_Obj*		k;
 				Tcl_Obj*		v;
@@ -1355,7 +1356,7 @@ int json_pretty(Tcl_Interp* interp, Tcl_Obj* json, Tcl_Obj* indent, Tcl_Obj* pad
 
 		case JSON_ARRAY: //{{{
 			{
-				int			i, oc;
+				Tcl_Size	i, oc;
 				Tcl_Obj**	ov;
 
 				TEST_OK_LABEL(finally, retval, Tcl_ListObjGetElements(interp, val, &oc, &ov));
@@ -1397,7 +1398,7 @@ finally:
 //}}}
 static int json_pretty_dbg(Tcl_Interp* interp, Tcl_Obj* json, Tcl_Obj* indent, Tcl_Obj* pad, Tcl_DString* ds) //{{{
 {
-	int							indent_len, pad_len, next_pad_len, count;
+	Tcl_Size							indent_len, pad_len, next_pad_len, count;
 	enum json_types				type;
 	const char*					pad_str;
 	const char*					next_pad_str;
@@ -1419,13 +1420,13 @@ static int json_pretty_dbg(Tcl_Interp* interp, Tcl_Obj* json, Tcl_Obj* indent, T
 
 	if (type == JSON_NULL) {
 		Tcl_Obj*	tmp = NULL;
-		replace_tclobj(&tmp, Tcl_ObjPrintf("(0x%lx[%d]/NULL)",
+		replace_tclobj(&tmp, Tcl_ObjPrintf("(0x%lx[%ld]/NULL)",
 						(unsigned long)(ptrdiff_t)json, json->refCount));
 		Tcl_DStringAppend(ds, Tcl_GetString(tmp), -1);
 		release_tclobj(&tmp);
 	} else {
 		Tcl_Obj*	tmp = NULL;
-		replace_tclobj(&tmp, Tcl_ObjPrintf("(0x%lx[%d]/0x%lx[%d] %s)",
+		replace_tclobj(&tmp, Tcl_ObjPrintf("(0x%lx[%ld]/0x%lx[%ld] %s)",
 						(unsigned long)(ptrdiff_t)json, json->refCount,
 						(unsigned long)(ptrdiff_t)val, val->refCount, val->typePtr ? val->typePtr->name : "pure string"));
 		Tcl_DStringAppend(ds, Tcl_GetString(tmp), -1);
@@ -1435,7 +1436,8 @@ static int json_pretty_dbg(Tcl_Interp* interp, Tcl_Obj* json, Tcl_Obj* indent, T
 	switch (type) {
 		case JSON_OBJECT: //{{{
 			{
-				int				done, k_len, max=0, size;
+				int done;
+				Tcl_Size	k_len, max=0, size;
 				Tcl_DictSearch	search;
 				Tcl_Obj*		k;
 				Tcl_Obj*		v;
@@ -1499,7 +1501,7 @@ static int json_pretty_dbg(Tcl_Interp* interp, Tcl_Obj* json, Tcl_Obj* indent, T
 
 		case JSON_ARRAY: //{{{
 			{
-				int			i, oc;
+				Tcl_Size	i, oc;
 				Tcl_Obj**	ov;
 
 				TEST_OK_LABEL(finally, retval, Tcl_ListObjGetElements(interp, val, &oc, &ov));
@@ -1621,7 +1623,7 @@ done:
 #endif
 static int prev_opcode(const struct template_cx *const cx) //{{{
 {
-	int			len, opcode;
+	Tcl_Size	len, opcode;
 	Tcl_Obj*	last = NULL;
 
 	TEST_OK(Tcl_ListObjLength(cx->interp, cx->actions, &len));
@@ -1661,7 +1663,8 @@ static int emit_fetches(const struct template_cx *const cx) //{{{
 
 	TEST_OK(Tcl_DictObjFirst(cx->interp, cx->map, &search, &elem, &v, &done));
 	for (; !done; Tcl_DictObjNext(&search, &elem, &v, &done)) {
-		int				len, fetch_idx, types_search_done=0, used_fetch=0;
+		Tcl_Size	len, fetch_idx;
+	        int	types_search_done=0, used_fetch=0;
 		Tcl_DictSearch	types_search;
 		Tcl_Obj*		type;
 		Tcl_Obj*		slot;
@@ -1698,7 +1701,7 @@ static int emit_fetches(const struct template_cx *const cx) //{{{
 				case JSON_DYN_LITERAL:
 					{
 						const char*		s;
-						int				len;
+						Tcl_Size	len;
 						enum json_types	type;
 
 						s = Tcl_GetStringFromObj(elem, &len);
@@ -1794,7 +1797,7 @@ static int remove_action(Tcl_Interp* interp, struct template_cx* cx, int idx) //
 {
 	idx *= 3;
 	if (idx < 0) {
-		int	len;
+		Tcl_Size len;
 
 		TEST_OK(Tcl_ListObjLength(interp, cx->actions, &len));
 		idx += len;
@@ -3660,11 +3663,9 @@ DLLEXPORT int Rl_json_Init(Tcl_Interp* interp) //{{{
 #endif
 
 	l->typeDict   = Tcl_GetObjType("dict");
-	l->typeInt    = Tcl_GetObjType("int");
 	l->typeDouble = Tcl_GetObjType("double");
 	l->typeBignum = Tcl_GetObjType("bignum");
 	if (l->typeDict == NULL) THROW_ERROR("Can't retrieve objType for dict");
-	if (l->typeInt == NULL) THROW_ERROR("Can't retrieve objType for int");
 	if (l->typeDouble == NULL) THROW_ERROR("Can't retrieve objType for double");
 	//if (l->typeBignum == NULL) THROW_ERROR("Can't retrieve objType for bignum");
 

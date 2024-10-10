@@ -38,33 +38,36 @@ RUN mkdir /src
 WORKDIR /src
 RUN git clone https://github.com/mpcjanssen/tcljupyter .
 
-# Install rl_json
-RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-  libtommath-dev
-RUN wget -q https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O - | tar zvx --one-top-level=rl_json --strip-components 1 &&\
-cd ./rl_json &&\
-./configure --prefix=/usr &&\
-make && make install
+# # Install rl_json
+# RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+#   libtommath-dev
+# RUN wget -q https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O - | tar zvx --one-top-level=rl_json --strip-components 1 &&\
+# cd ./rl_json &&\
+# ./configure --prefix=/usr &&\
+# make && make install
 
 
 # Install tcllib
-RUN wget -q https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O - | tar zvx --one-top-level=tcllib --strip-components 1 &&\
+COPY tcllib-1.21-9.tar.gz .
+RUN tar zvxf tcllib-1.21-9.tar.gz --one-top-level=tcllib --strip-components 1 &&\
 cd ./tcllib &&\
  ls &&\
  ./configure --prefix=/usr &&\
- make && make install 
+ make install 
 
 # Install critcl
-RUN wget -q https://github.com/mpcjanssen/critcl/archive/3.1.18.1.tar.gz -O - | tar zvx  --one-top-level=critcl --strip-components 1 &&\
+COPY critcl-3.2.tar.gz .
+RUN tar zvxf critcl-3.2.tar.gz  --one-top-level=critcl --strip-components 1 &&\
 cd ./critcl &&\
 ls &&\
-tclsh build.tcl install 
+tclsh9.0 build.tcl install 
 
 # Install zmq
-RUN wget -q  https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O - | tar zvx  --one-top-level=tclzmq --strip-components 1 &&\
+COPY tclzmq.tar.gz .
+RUN tar zvxf tclzmq.tar.gz  --one-top-level=tclzmq --strip-components 1 &&\
 cd ./tclzmq &&\
 ls &&\
-tclsh build.tcl install 
+tclsh9.0 build.tcl install 
 
 # Install tclcurl
 
