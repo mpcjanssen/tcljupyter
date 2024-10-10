@@ -101,7 +101,7 @@ proc bgerror {jmsg errorInfo} {
     puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
     dict with jmsg {
         set parent $ph
-        set username [json get $ph username]
+        set username [json_get $ph username]
         set header  [jmsg::newheader $username execute_reply]
         set content [json template {
             {
@@ -121,8 +121,8 @@ proc complete_request {jmsg} {
     set ph [dict get $jmsg header]
     respond [jmsg::status $ph busy]
     
-    set cursor_pos [json get [dict get $jmsg content] cursor_pos]
-    set code [json get [dict get $jmsg content] code]
+    set cursor_pos [json_get [dict get $jmsg content] cursor_pos]
+    set code [json_get [dict get $jmsg content] code]
     set cursor_start $cursor_pos
     set cursor_end $cursor_pos
 
@@ -135,7 +135,7 @@ proc complete_request {jmsg} {
     }
     dict with jmsg {
         set parent $ph
-        set username [json get $header username]
+        set username [json_get $header username]
         set header  [jmsg::newheader $username complete_reply]
         set content [json template {
             {
@@ -160,7 +160,7 @@ proc is_complete_request {jmsg} {
     set ph [dict get $jmsg header]
     respond [jmsg::status $ph busy]
     
-    set code [json get [dict get $jmsg content] code]
+    set code [json_get [dict get $jmsg content] code]
     append code \n
     if {[info complete $code]} {
 	set status "complete"
@@ -184,7 +184,7 @@ proc is_complete_request {jmsg} {
     # puts b.$indent_level=$b
     dict with jmsg {   
         set parent $ph
-        set username [json get $header username]
+        set username [json_get $header username]
         set header  [jmsg::newheader $username is_complete_reply]
 	if {$status eq "incomplete"} {
 	    set content [json template {
@@ -212,7 +212,7 @@ proc execute_request {jmsg} {
 
     respond [jmsg::status $ph busy]
 
-    set code [json get [dict get $jmsg content] code]
+    set code [json_get [dict get $jmsg content] code]
     set response [jmsg::newiopub $ph execute_input]
     dict with response {
         set content [json template {
@@ -300,7 +300,7 @@ proc execute_request {jmsg} {
 
     dict with jmsg {
         set parent $ph
-        set username [json get $header username]
+        set username [json_get $header username]
         set header  [jmsg::newheader $username execute_reply]
         set content $rcontent       
     }

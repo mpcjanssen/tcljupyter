@@ -1,6 +1,7 @@
 package require zmq
 package require Thread
 package require jmsg
+package require tdom
 
 
 set script [file normalize [info script]]
@@ -16,12 +17,15 @@ set t {}
 
 zmq context context -io_threads 2
 
+
 proc connect {connection_file} {
     variable conn
     variable ports
     set f [open $connection_file]
     set conn [read $f]
-    set key [json get $conn key]
+    dom parse -json $conn doc
+    puts $conn
+    set key [[$doc getElementsByTagName key] asText] 
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
 
     starthb
@@ -158,11 +162,16 @@ proc listen {port type} {
     if {$port ne "iopub"} { listen_loop $port }
 }
 
+proc json_get {json key} {
+    dom parse -json $json doc
+    return [[$doc getElementsByTagName $key] asText] 
+}
+
 proc address {port} {
     variable conn
-    set address [json get $conn transport]://
-    append address [json get $conn ip]:
-    append address [json get $conn ${port}_port]
+    set address [json_get $conn transport]://
+    append address [json_get $conn ip]:
+    append address [json_get $conn ${port}_port]
     return $address
 }
 
@@ -171,7 +180,7 @@ proc handle_control_request {jmsg} {
     variable t
     set ph [dict get $jmsg header]
     set ps [jmsg::session $jmsg]
-    set msg_type [json get $ph msg_type]
+    set msg_type [json_get $ph msg_type]
     set reply_type {}
     switch -exact $msg_type {
         shutdown_request {
@@ -201,7 +210,7 @@ proc handle_info_request {jmsg} {
     respond [jmsg::status $parent busy]
     dict with jmsg {
         set parent $header
-        set username [json get $header username]
+        set username [json_get $header username]
         set header  [jmsg::newheader $username kernel_info_reply] 
         set version [info patchlevel]
 	set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
