@@ -42,8 +42,11 @@ proc respond_body {jmsg} {
     variable ports
     variable kernel_id
     set port [dict get $jmsg port]
+    set header [dict get $jmsg header]
+    dom parse -json $header doc
+    json_set $doc session $kernel_id
     dict with jmsg {
-        json set header session $kernel_id
+        set header [$doc asJSON]
         set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]] 
     }
 
@@ -162,11 +165,6 @@ proc listen {port type} {
     if {$port ne "iopub"} { listen_loop $port }
 }
 
-proc json_get {json key} {
-    dom parse -json $json doc
-    return [[$doc getElementsByTagName $key] asText] 
-}
-
 proc address {port} {
     variable conn
     set address [json_get $conn transport]://
@@ -213,7 +211,7 @@ proc handle_info_request {jmsg} {
         set username [json_get $header username]
         set header  [jmsg::newheader $username kernel_info_reply] 
         set version [info patchlevel]
-	set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
+	set banner [format "Tcl %s :: TclJupyter kernel %s \\nProtocol v%s" \
 			$version \
 			$modver \
 			"5.3"]

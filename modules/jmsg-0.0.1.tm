@@ -5,14 +5,14 @@ namespace eval jmsg {
     proc newheader {username msg_type} {
         set msg_id [newid]
         set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
-        [subst --nocommands {
+        return [subst -nocommands {
             {"msg_id":"$msg_id",
                 "msg_type":"$msg_type",
                 "username":"$username",
                 "date":"$date",
                 "version":"5.3"
             }
-        }  
+        }]  
     }
 
 proc newid {} {
@@ -63,7 +63,7 @@ proc type {msg} {
 proc newiopub {parent msg_type} {
     set username [json_get $parent username]
     set header [jmsg::newheader $username $msg_type]
-    set content [json template {{}}]
+    set content {{}}
     set jmsg [list port iopub uuid $msg_type delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
     return $jmsg 
 }
@@ -71,8 +71,20 @@ proc newiopub {parent msg_type} {
 proc status {parent state} {
     set jmsg [newiopub $parent status]
     dict with jmsg {
-	set content [subst -nocommands {{"execution_state" : "$status"}}]   
+	set content [subst -nocommands {{"execution_state" : "$state"}}]   
     }
     return $jmsg    
 }
+}
+
+proc json_get {json key} {
+    dom parse -json $json doc
+    return [[$doc getElementsByTagName $key] asText] 
+}
+
+proc json_set {doc key value} {
+     set e [$doc createElement $key] 
+     set t [$doc createTextNode $value]
+     $e appendChild $t
+     $doc appendChild $e
 }
