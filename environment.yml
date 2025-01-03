@@ -1,9 +1,7 @@
 name: tcljupyter
 channels:
   - conda-forge
-  - intel
 dependencies:
-# host Dependencies
   - tcl
   - make
   - zeromq
