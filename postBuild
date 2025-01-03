@@ -11,7 +11,7 @@ export TCLLIBPATH=$PREFIX
 git clone https://github.com/libtom/libtommath.git
 mkdir -p libtommath/build
 cd libtommath/build
-cmake ..
+cmake -DCMAKE_INSTALL_PREFIX=$PREFIX ..
 make 
 make install
 cd ../..
