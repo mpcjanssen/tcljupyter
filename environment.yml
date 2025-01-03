@@ -1,9 +1,9 @@
 name: tcljupyter
 channels:
   - conda-forge
+  - intel
 dependencies:
   - python=3.11
-  - tcl
   - make
   - zeromq
   - git
