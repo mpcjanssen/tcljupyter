@@ -16,9 +16,10 @@ make && make install
 cd ../..
 
 
-wget -q https://github.com/mpcjanssen/rl_json/archive/tcl9.tar.gz -O rl_json.tar.gz
-tar xf rl_json.tar.gz
-cd rl_json-tcl9
+git clone https://github.com/mpcjanssen/rl_json.git rl_json --recursive
+cd rl_json
+git submodule update
+autoconf
 ./configure --prefix=$PREFIX
 make && make install
 cd ..
@@ -29,9 +30,9 @@ cd andreas-kupries-critcl-254bdff
 tclsh build.tcl install $PREFIX
 cd ..
 
-wget -q https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O tcllib.tar.gz
-tar xf tcllib.tar.gz
-cd tcllib-tcllib-1-20
+wget -q https://core.tcl-lang.org/tcllib/uv/tcllib-2.0.tar.gz
+tar xf tcllib-2.0.tar.gz
+cd tcllib-2.0
 ./configure --prefix=$PREFIX
 make && make install
 cd ..
