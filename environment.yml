@@ -2,6 +2,7 @@ name: tcljupyter
 channels:
   - conda-forge
 dependencies:
+  - python-3.13
   - tcl
   - make
   - zeromq
