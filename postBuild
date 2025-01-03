@@ -6,7 +6,7 @@ export PREFIX=${CONDA_DIR}/envs/notebook
 cd ${PREFIX}
 mkdir -p src
 cd src
-export TCLLIBPATH=$PREFIX
+export TCLLIBPATH=$PREFIX/lib
 
 
 wget -q https://sourceforge.net/projects/tcl/files/Tcl/9.0.1/tcl9.0.1-src.tar.gz/download -O tcl.tar.gz
