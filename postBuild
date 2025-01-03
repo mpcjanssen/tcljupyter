@@ -8,13 +8,6 @@ mkdir -p src
 cd src
 export TCLLIBPATH=$PREFIX
 
-git clone https://github.com/libtom/libtommath.git
-mkdir -p libtommath/build
-cd libtommath/build
-cmake -DCMAKE_INSTALL_PREFIX=$PREFIX ..
-make 
-make install
-cd ../..
 
 wget -q https://sourceforge.net/projects/tcl/files/Tcl/9.0.1/tcl9.0.1-src.tar.gz/download -O tcl.tar.gz
 tar xvf tcl.tar.gz
