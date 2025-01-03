@@ -52,6 +52,8 @@ tar xf tclzmq.tar.gz
 cd tclzmq-tcl9
 tclsh9.0 build.tcl install $PREFIX/lib -zmq ${PREFIX}
 cd ..
+
+rm -r src
 export KERNELPATH=$PREFIX/share/jupyter/kernels/tcljupyter
 mkdir -p $KERNELPATH
 
