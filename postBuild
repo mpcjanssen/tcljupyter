@@ -26,6 +26,7 @@ cd ../..
 
 git clone https://github.com/mpcjanssen/rl_json.git rl_json --recursive
 cd rl_json
+git checkout tcl9
 git submodule update
 autoconf
 ./configure --prefix=$PREFIX --with-tcl=/srv/conda/envs/notebook/lib
@@ -49,7 +50,7 @@ cd ..
 wget -q https://github.com/mpcjanssen/tclzmq/archive/tcl9.tar.gz -O tclzmq.tar.gz
 tar xf tclzmq.tar.gz
 cd tclzmq-tcl9
-tclsh9.0 build.tcl install $PREFIX -zmq ${PREFIX}
+tclsh9.0 build.tcl install $PREFIX/lib -zmq ${PREFIX}
 cd ..
 export KERNELPATH=$PREFIX/share/jupyter/kernels/tcljupyter
 mkdir -p $KERNELPATH
