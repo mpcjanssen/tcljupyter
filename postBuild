@@ -12,7 +12,7 @@ git clone https://github.com/libtom/libtommath.git
 mkdir -p libtommath/build
 cd libtommath/build
 cmake ..
-make -j$(nproc)
+make 
 make install
 cd ../..
 
