@@ -1,1 +1,1 @@
-{"argv":["tclsh","/srv/conda/envs/notebook/share/jupyter/kernels/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}
+{"argv":["tclsh9.0","/srv/conda/envs/notebook/share/jupyter/kernels/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}

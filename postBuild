@@ -8,13 +8,26 @@ mkdir -p src
 cd src
 export TCLLIBPATH=$PREFIX
 
-wget -q https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O rl_json.tar.gz
+wget -q https://sourceforge.net/projects/tcl/files/Tcl/9.0.1/tcl9.0.1-src.tar.gz/download -O tcl.tar.gz
+tar xvf tcl.tar.gz
+cd tcl9.0.1/unix
+./configure --prefix=$PREFIX
+make && make install
+cd ../..
+
+
+wget -q https://github.com/mpcjanssen/rl_json/archive/tcl9.tar.gz -O rl_json.tar.gz
 tar xf rl_json.tar.gz
-cd rl_json-binder
+cd rl_json-tcl9
 ./configure --prefix=$PREFIX
 make && make install
 cd ..
 
+wget -q http://github.com/andreas-kupries/critcl/tarball/3.3.1 -O criticl.tar.gz
+tar xf criticl.tar.gz
+cd andreas-kupries-critcl-254bdff
+tclsh build.tcl install $PREFIX
+cd ..
 
 wget -q https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O tcllib.tar.gz
 tar xf tcllib.tar.gz
@@ -23,15 +36,10 @@ cd tcllib-tcllib-1-20
 make && make install
 cd ..
 
-wget -q https://github.com/mpcjanssen/critcl/archive/3.1.18.1.tar.gz -O criticl.tar.gz
-tar xf criticl.tar.gz
-cd critcl-3.1.18.1/
-tclsh build.tcl install
-cd ..
 
-wget -q https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O tclzmq.tar.gz
+wget -q https://github.com/mpcjanssen/tclzmq/archive/tcl9.tar.gz -O tclzmq.tar.gz
 tar xf tclzmq.tar.gz
-cd tclzmq-binder
+cd tclzmq-tcl9
 tclsh build.tcl install $PREFIX -zmq ${PREFIX}
 cd ..
 export KERNELPATH=$PREFIX/share/jupyter/kernels/tcljupyter
