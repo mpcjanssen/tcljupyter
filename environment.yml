@@ -7,4 +7,4 @@ dependencies:
   - git
   - libuuid
   - cmake
-  - zmq
+  - zeromq
