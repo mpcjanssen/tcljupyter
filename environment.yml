@@ -7,6 +7,4 @@ dependencies:
   - git
   - libuuid
   - cmake
-  - libzmq5
-  - libzmq3-dev
   - zmq
