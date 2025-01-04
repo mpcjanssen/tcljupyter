@@ -4,7 +4,9 @@ channels:
 dependencies:
   - python=3.11
   - make
-  - zeromq
   - git
   - libuuid
   - cmake
+  - libzmq5
+  - libzmq3-dev
+  - zmq

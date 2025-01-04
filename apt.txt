@@ -1,3 +1,2 @@
 libtommath-dev
 libzmq3-dev
-libzmq5
