@@ -4,16 +4,12 @@
 
 ### local
 
-- Run ./postBuild
-- Install all the packages downloaded into the src folder.
-- Manually copy the `kernel.json` to a subdirectory of the kernels directory in a Jupyter data location (one of `jupyter --paths`).
-
-Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
+- See the Dockerfile for a recipe on how to build the tclkernel.
 
 ### Docker
-The `docker*` folders contain `Dockerfile`s for building a tcljupyter container based on alpine or a bigger jupyter image with additional IRuby and IRacket kernels based on debian. Example `docker-compose.yml` files are added.
+The `docker` folder contains the `Dockerfile` for building a tcljupyter container based on alpine. An example `docker-compose.yml` file is added.
 
-Prebuilt images for amd64 and arm64 are on [Docker Hub](https://hub.docker.com/r/mpcjanssen/tcljupyter).
+Prebuilt images are on [Docker Hub](https://hub.docker.com/r/mpcjanssen/tcljupyter).
 
 ### Binder
 
@@ -26,9 +22,9 @@ If you want to try it out without installation you can use the Binder version in
 
 The Tcl used to run the `init.tcl` script should have the following available:
 
-- Tcl 8.6 with threads
+- Tcl 9,0 with threads
 - [tclzmq](https://github.com/jdc8/tclzmq) (Not for the tclonly version) 
-- [rl_json](https://github.com/RubyLane/rl_json) 0.11.0 or higher
+- [rl_json](https://github.com/mpcjanssen/rl_json) custom built version for Tcl 9.0
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) uuid
 - [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) sha256
 
@@ -60,10 +56,10 @@ Most web client commands are supported. Only thing missing is reading from stdin
 
 ### Magic commands
 
-Magics are lines starting with `%%` at the top of the cell.
+Magics are lines starting with `##` at the top of the cell.
 
-   * `%%timeit ?count?`: Time the execution of the cell and display the results. Changing count will execute the cell multiple times and show the average time.
-   * `%%noresult`: Do not show the last result. This is convenient if the last result is very large.
+   * `##timeit ?count?`: Time the execution of the cell and display the results. Changing count will execute the cell multiple times and show the average time.
+   * `##noresult`: Do not show the last result. This is convenient if the last result is very large. The same effect can be achieved by postfixing a `;` as the last character in the cell.
 
 ## Test suite
 
