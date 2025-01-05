@@ -12,8 +12,8 @@ ENV VENV=/venv
 RUN \
     --mount=type=cache,target=/var/cache/apk \
     apk update &&\
-    apk add bash curl python3 git wget zeromq-dev gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil &&\
-    apk add nim nimble libtommath
+    apk add autoconf bash curl python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil &&\
+    apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/ nim nimble libtommath-dev
 
 RUN python3 -m venv ${VENV}
 RUN \
@@ -21,50 +21,55 @@ RUN \
     ${VENV}/bin/pip install jupyterlab &&\
     ${VENV}/bin/pip cache purge
 
-# Install tcljupyter
+# Install tcl9
 RUN mkdir /src
 WORKDIR /src
 RUN wget -q http://prdownloads.sourceforge.net/tcl/tcl9.0.1-src.tar.gz -O - | tar zvx --one-top-level=tcl9 --strip-components 1 &&\
-cd tcl9 &&\
+cd tcl9/unix &&\
 ./configure --prefix=/usr &&\
 make && make install
 
-# Install rl_json
-RUN wget -q https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O - | tar zvx --one-top-level=rl_json --strip-components 1 &&\
-cd ./rl_json &&\
+RUN git clone https://github.com/mpcjanssen/rl_json.git rl_json --recursive &&\
+cd rl_json &&\
+git checkout tcl9 &&\
+git submodule update &&\
+autoconf &&\
 ./configure --prefix=/usr &&\
-make && make install
+make && make install 
 
 # Install critcl
-RUN wget -q https://github.com/mpcjanssen/critcl/archive/3.1.18.1.tar.gz -O - | tar zvx  --one-top-level=critcl --strip-components 1 &&\
+RUN wget -q  http://github.com/andreas-kupries/critcl/tarball/3.3.1 -O - | tar zvx  --one-top-level=critcl --strip-components 1 &&\
 cd ./critcl &&\
 ls &&\
 tclsh9.0 build.tcl install 
 
 # Install tcllib
-RUN wget -q https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O - | tar zvx --one-top-level=tcllib --strip-components 1 &&\
+RUN wget -q https://core.tcl-lang.org/tcllib/uv/tcllib-2.0.tar.gz -O - | tar zvx --one-top-level=tcllib --strip-components 1 &&\
 cd ./tcllib &&\
- ls &&\
- ./configure --prefix=/usr &&\
- make && make install 
+ls &&\
+./configure --prefix=/usr &&\
+make && make install 
 
 
 # Install zmq
-RUN wget -q  https://github.com/mpcjanssen/tclzmq/archive/binder.tar.gz -O - | tar zvx  --one-top-level=tclzmq --strip-components 1 &&\
+RUN wget -q  https://github.com/mpcjanssen/tclzmq/archive/tcl9.tar.gz -O - | tar zvx  --one-top-level=tclzmq --strip-components 1 &&\
 cd ./tclzmq &&\
 ls &&\
-tclsh9.0 build.tcl install 
+tclsh9.0 build.tcl install /usr/lib 
 
-# Install tclcurl
+# Install tcljupyter
+RUN git clone https://github.com/mpcjanssen/tcljupyter 
 
-RUN fossil clone https://fossil.mpcjanssen.nl/tclcurl --user=root &&\
-cd tclcurl &&\
-touch rebuild2 &&\
-./configure --prefix=/usr &&\
-make && make install
+## Install tclcurl
+#
+#RUN fossil clone https://fossil.mpcjanssen.nl/tclcurl --user=root &&\
+#cd tclcurl &&\
+#touch rebuild2 &&\
+#./configure --prefix=/usr &&\
+#make && make install
 
 # Install
-RUN mkdir -p /root/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh9.0","/src/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message" }' > /root/.local/share/jupyter/kernels/tcl/kernel.json && mkdir -p ${CONFIG}
+RUN mkdir -p /root/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh9.0","/src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl 9","language":"tcl","interrupt_mode":"message" }' > /root/.local/share/jupyter/kernels/tcl/kernel.json && mkdir -p ${CONFIG}
 
 # Expose Jupyter port and start Jupyter
 EXPOSE ${PORT}
