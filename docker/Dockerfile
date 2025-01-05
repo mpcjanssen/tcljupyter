@@ -12,13 +12,13 @@ ENV VENV=/venv
 RUN \
     --mount=type=cache,target=/var/cache/apk \
     apk update &&\
-    apk add autoconf bash curl python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil &&\
+    apk add autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil &&\
     apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/ nim nimble libtommath-dev
 
 RUN python3 -m venv ${VENV}
 RUN \
     --mount=type=cache,target=/root/.cache \
-    ${VENV}/bin/pip install jupyterlab &&\
+    ${VENV}/bin/pip install jupyterlab jupyterlab-git &&\
     ${VENV}/bin/pip cache purge
 
 # Install tcl9
@@ -75,4 +75,4 @@ RUN mkdir -p /root/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh9.0"
 EXPOSE ${PORT}
 COPY startup.sh /tmp/
 RUN mkdir -p ${NOTEBOOKS} ${TCLLIBPATH} && chmod a+x /tmp/startup.sh
-CMD /tmp/startup.sh
+CMD ["/tmp/startup.sh"]
