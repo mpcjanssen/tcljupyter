@@ -5,7 +5,7 @@ tcl::tm::path add [file join [file dirname [info script]] modules]
 tcl::tm::path add ~/Src/site-tcl/modules
 lappend auto_path [file join [file dirname [info script]] libs-$::tcl_platform(platform)]
 
-package require Tcl 8.6
+package require Tcl 8.6-
 package require tclkernel
 if {[llength $argv] == 0} {
   puts $auto_path
