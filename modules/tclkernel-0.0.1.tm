@@ -38,8 +38,9 @@ proc respond_body {jmsg} {
     variable ports
     variable kernel_id
     set port [dict get $jmsg port]
+
     dict with jmsg {
-        json set header session $kernel_id
+        set header [json set $header session $kernel_id]
         set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]] 
     }
 
@@ -208,23 +209,18 @@ proc handle_info_request {jmsg} {
 			$version \
 			$modver \
 			"5.3"]
-        set content [json template $::kernel_info]
+        set content  $::kernel_info
     }
     respond $jmsg
     respond [jmsg::status $parent idle]
 }
-set kernel_info { {
-    "status" : "ok",
-    "protocol_version": "5.3",
-    "implementation": "tcljupyter",
-    "implementation_version": "~S:modver",
-    "language_info": {
-        "name": "tcl",
-        "version": "~S:version",
-        "mimetype": "txt/x-tcl",
-        "file_extension": ".tcl"
-    },
-    "banner" : "~S:banner"
-}}
 
+set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
+			[info patchlevel] \
+			$modver \
+			"5.3"]
+set language_info [json new name tcl version [info patchlevel] mimetype txt/x-tcl file_extension .tcl]
+set kernel_info [json new status ok protocol_version 5.3 implementation tcljupyter implementation_version $modver banner $banner]
+set kernel_info [json nest $kernel_info language_info $language_info]
 
+puts "$$$$$$$$$$$$$$$$$$$$$\n$kernel_info\n$$$$$$$$$$$$$$$$$$$$$$"

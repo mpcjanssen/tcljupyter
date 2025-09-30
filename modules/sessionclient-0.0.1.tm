@@ -1,6 +1,5 @@
 package require jmsg
-package require rl_json 0.11.0-
-namespace import rl_json::json
+package require jlib
 
 set pipe {}
 set ph {}
@@ -26,12 +25,7 @@ proc stream {name text} {
     variable ph
     set response [jmsg::newiopub $ph stream]
     dict with response {
-        set content [json template {
-            {
-                "name":"~S:name",
-                "text":"~S:text"
-            }
-        }]
+        set content [json new name $name text $text]
     }
     respond $response
 }
@@ -215,12 +209,7 @@ proc execute_request {jmsg} {
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $ph execute_input]
     dict with response {
-        set content [json template {
-            {
-                "code":"~S:code",
-                "execution_count":"~N:exec_counter"
-            }
-        }]
+        set content [json new code $code execution_count $exec_counter]
     }
     respond $response
     set lines [split $code \n]
