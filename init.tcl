@@ -13,7 +13,9 @@ if {[llength $argv] == 0} {
   puts [package require sqlite3]
   puts [package require zmq]
   puts [package require jlib]
-
+  set js "{}"
+  json nest js traceback [json arr "abcd" 1234]
+  puts $js
   exit 0
 }
 lassign $argv connection_file

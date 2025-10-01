@@ -38,19 +38,21 @@ proc respond_body {jmsg} {
     variable ports
     variable kernel_id
     set port [dict get $jmsg port]
+    puts $jmsg
 
     dict with jmsg {
-        set header [json set $header session $kernel_id]
+        json set header session $kernel_id
         set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]] 
     }
 
     set zmsg [jmsg::znew $jmsg]
-    # puts "$port [string repeat > 20]"
-    # puts "RESPOND:\n[string range [join $zmsg \n] 0 1200]\n"
+ #   puts "$port [string repeat > 20]"
+ #   puts "RESPOND:\n[string range [join $zmsg \n] 0 1200]\n"
     foreach msg [lrange $zmsg 0 end-1] {
         $ports($port) sendmore $msg
     }
     $ports($port) send [lindex $zmsg end]
+    puts here
 }
 
 proc respond {jmsg} {
@@ -70,11 +72,13 @@ proc on_recv {port} {
 	# puts "...handling"
     }
     set zmsg [zmsg recv $ports($port)]
-    # puts "\n\n\n\n$port [string repeat < 20]"
-    # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
+#    puts "\n\n\n\n$port [string repeat < 20]"
+#    puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
     set jmsg [jmsg::new [list $port {*}$zmsg]]
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
+#    puts ">>>>>>>>>>>>>>>>>>>>"
+#    puts $jmsg
     if {$type eq "kernel_info_request"} {
         handle_info_request $jmsg
         return
@@ -83,21 +87,25 @@ proc on_recv {port} {
         # Unsupported
         return
     }
+    if {$type eq "history_request"} {
+        # Unsupported
+        return
+    }
     if {$port eq "control"} {
         handle_control_request $jmsg
         return
     } 
-
-    # puts ">>>>>>>>>>>>>>>>>>>>"
-    # puts $jmsg
-
+    puts xxxxxxxxxxxxxxxxxxxxxxxx
     # wrap command in a catch to capture and handle interrupt messages
+    puts [list set cmd [list $type $jmsg $to]]
     thread::send -async $to [list set cmd [list $type $jmsg $to]]
-    thread::send -async $to {
+    thread::send  -async $to {
         lassign $cmd type jmsg to
         if {[catch {$type $jmsg} result]} {
+                        set l [open log.txt a]
+            puts $l $::errorInfo
             bgerror $jmsg $::errorInfo
-            # puts $::errorInfo
+
         }
     }
 }
@@ -221,6 +229,6 @@ set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
 			"5.3"]
 set language_info [json new name tcl version [info patchlevel] mimetype txt/x-tcl file_extension .tcl]
 set kernel_info [json new status ok protocol_version 5.3 implementation tcljupyter implementation_version $modver banner $banner]
-set kernel_info [json nest $kernel_info language_info $language_info]
+json nest kernel_info language_info $language_info
 
 puts "$$$$$$$$$$$$$$$$$$$$$\n$kernel_info\n$$$$$$$$$$$$$$$$$$$$$$"

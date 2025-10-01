@@ -58,13 +58,12 @@ proc display_data {mimetype body id} {
 }
 
 proc execute_result {n result {mimetype "text/plain"}} {
-    json template {
-	{
-	    "execution_count" : "~N:n",
-	    "data": {"~S:mimetype" : "~S:result"},
-	    "metadata" : {}
-	}
-    }
+    set data [json new $mimetype $result]
+    puts $data
+    set result [json new execution_count $n]
+    json nest result data $data
+    json nest result metadata "{}"
+    return $result
 }
 
 proc display {mimetype body} {
@@ -89,22 +88,19 @@ proc updatedisplay {id mimetype body} {
     respond $response
 }
 
+set l [open log.txt a]
+
 proc bgerror {jmsg errorInfo} {
     variable exec_counter
     set ph [dict get $jmsg header]
-    puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
+    puts $::l [join [lrange [split $::errorInfo \n] 0 2] \n]
     dict with jmsg {
         set parent $ph
         set username [json get $ph username]
         set header  [jmsg::newheader $username execute_reply]
-        set content [json template {
-            {
-                "status":"ok",
-                "execution_count":"~N:exec_counter",
-                "user_expressions": {}
+        set content [json new status ok execution_count $exec_counter] 
+        json nest content user_expressions "{}"
 
-            }
-        }]       
     }
     respond $jmsg
     respond [jmsg::status $ph idle]  
@@ -199,9 +195,11 @@ proc is_complete_request {jmsg} {
 }
 
 proc execute_request {jmsg} {
+
     variable ph
     variable exec_counter
     incr exec_counter
+    set rcontent "{}"
     set ph [dict get $jmsg header]
 
     respond [jmsg::status $ph busy]
@@ -259,17 +257,16 @@ proc execute_request {jmsg} {
     }
     if {$error} {
         set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
-	json set rcontent ename [json string "Tcl error"]; # error code, if present
-	json set rcontent evalue [json string $result]
-	json set rcontent traceback [json array [list "string" $emsg]]
-	
+	json set rcontent ename "Tcl error"; # error code, if present
+	json set rcontent evalue $result
+	json nest rcontent traceback [json arr [list "string" $emsg]]
 	set err [jmsg::newiopub $ph error]
 	dict with err {
 	    set content $rcontent
 	}
 	puts stderr $emsg
 	
-	json set rcontent status [json string "error"]
+	json set rcontent status "error"
 	
     } else {
         if {$result ne {} && ![dict get $magics noresult]} {
@@ -279,13 +276,13 @@ proc execute_request {jmsg} {
 	    }
 	    respond $response
 	}
-	
-	json set rcontent status [json string "ok"]
-	json set rcontent user_expressions [json object]
-	json set rcontent payload [json array]
+
+	json set rcontent status "ok"
+	json set rcontent user_expressions "{}"
+	json set rcontent payload "{}"
     }
 
-    json set rcontent execution_count [json number $exec_counter]
+    json set rcontent execution_count $exec_counter
 
     dict with jmsg {
         set parent $ph
@@ -293,9 +290,10 @@ proc execute_request {jmsg} {
         set header  [jmsg::newheader $username execute_reply]
         set content $rcontent       
     }
-
+    puts $ph
     respond $jmsg
     respond [jmsg::status $ph idle]
+    
 }
 
 

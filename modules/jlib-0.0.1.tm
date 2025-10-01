@@ -1,12 +1,11 @@
 package require sqlite3
 namespace eval json {
 
-    namespace ensemble create -map [list get get set jset new new nest nest]
+    namespace ensemble create -map [list get get set jset new new nest nest arr arr]
     sqlite3 db
     proc get {str key} {
         set path "\$.$key"
         lassign [db eval {select json_extract($str, $path)}] val
-        puts js:\t$val
         return $val
     }
 
@@ -14,23 +13,29 @@ namespace eval json {
         set js "{}"
         foreach {k v} $args {
             set path "\$.$k"
-            puts "$js, $path -> $v" 
             lassign [db eval {select json_set($js,$path,$v)}] js
         }
-        puts js:\t$js
         return $js
     }
-    proc jset {str k v} {
+    proc jset {varname k v} {
+        upvar $varname str
         set path "\$.$k"
         lassign  [db eval {select json_set($str,$path,$v)}] js
-        puts js:\t$js
-        return $js
+        set str $js
     }
 
-    proc nest {str k jv} {
+    proc nest {varname k jv} {
+        upvar $varname str
         set path "\$.$k"
         lassign  [db eval {select json_set($str,$path,jsonb($jv))}] js
-        puts js:\t$js
+        set str $js
+    }
+
+    proc arr {args} {
+        set js {[]}
+        foreach v $args {
+            lassign [db eval {select json_insert($js,'$[#]',$v)} ] js 
+        }
         return $js
     }
 

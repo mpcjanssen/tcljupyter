@@ -56,7 +56,7 @@ proc type {msg} {
 proc newiopub {parent msg_type} {
     set username [json get $parent username]
     set header [jmsg::newheader $username $msg_type]
-    set content '{}'
+    set content {}
     set jmsg [list port iopub uuid $msg_type delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
     return $jmsg 
 }
