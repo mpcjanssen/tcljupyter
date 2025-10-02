@@ -1,6 +1,6 @@
 #
 #
-FROM alpine:edge
+FROM alpine:latest
 
 ENV NOTEBOOKS=/notebooks
 ENV CONFIG=/config
@@ -12,8 +12,7 @@ ENV VENV=/venv
 RUN \
     --mount=type=cache,target=/var/cache/apk \
     apk update &&\
-    apk add autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil &&\
-    apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/ nim nimble libtommath-dev
+    apk add autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil 
 
 RUN python3 -m venv ${VENV}
 RUN \
