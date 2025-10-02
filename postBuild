@@ -8,14 +8,6 @@ mkdir -p src
 cd src
 export TCLLIBPATH=$PREFIX
 
-wget -q https://github.com/mpcjanssen/rl_json/archive/binder.tar.gz -O rl_json.tar.gz
-tar xf rl_json.tar.gz
-cd rl_json-binder
-./configure --prefix=$PREFIX
-make && make install
-cd ..
-
-
 wget -q https://github.com/mpcjanssen/tcllib/archive/tcllib-1-20.tar.gz -O tcllib.tar.gz
 tar xf tcllib.tar.gz
 cd tcllib-tcllib-1-20
