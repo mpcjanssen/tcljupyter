@@ -1,10 +1,5 @@
 package require sqlite3
 
-set log [open log.txt a]
-fconfigure $log -buffering line
-
-puts $log "started"
-
 namespace eval json {
 
     namespace ensemble create -map [list get get set jset new new nest nest arr arr]
@@ -24,29 +19,20 @@ namespace eval json {
         return $js
     }
     proc jset {varname k v} {
-        puts $::log "set\t$varname: $k->$v"
+        # puts $::log "set\t$varname: $k->$v"
         upvar $varname str
-         puts $::log [info exists str]
+        if {![info exists str]} {
+            set str [json new]
+        }
         set path "\$.$k"
-        lassign  [db eval {select json_set($str,$path,$v)}] js
-        set str $js
+        lassign  [db eval {select json_set($str,$path,$v)}] str
     }
 
     proc nest {varname k jv} {
         upvar $varname str
-        puts $::log "nest:\t$varname: $k->$jv"
+        # puts $::log "nest:\t$varname: $k->$jv"
         set path "\$.$k"
-        if {[catch {lassign  [db eval {select json_set($str,$path,json($jv))}] js}]} {
-            puts $::log ERROR
-            puts $::log [info exists str]
-            puts $::log [info level 0]
-            puts $::log $str
-            puts $::log $::errorInfo
-            puts $::log END
-
-        }
-        
-        set str $js
+        lassign  [db eval {select json_set($str,$path,json($jv))}] str
     }
 
     proc arr {args} {

@@ -43,19 +43,16 @@ proc display_data {mimetype body id} {
         json set content metadata [json new]
         json nest content transient [json new display_id $id]
     }
-    set l [open log.txt a]
-    puts $l $content
-    close $l
     return $content
 
 }
 
 proc execute_result {n result {mimetype "text/plain"}} {
     set data [json new $mimetype $result]
-    puts $data
+
     set result [json new execution_count $n]
     json nest result data $data
-    json nest result metadata "{}"
+    json nest result metadata [json new]
     return $result
 }
 
@@ -82,11 +79,6 @@ proc updatedisplay {id mimetype body} {
 }
 
 proc bgerror {jmsg errorInfo} {
-    set l [open log.txt a]
-    puts $l ERROR
-    puts $l $::errorInfo
-    flush $l
-    close $l
     variable exec_counter
     set ph [dict get $jmsg header]
     puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
@@ -179,7 +171,7 @@ proc execute_request {jmsg} {
     variable ph
     variable exec_counter
     incr exec_counter
-    set rcontent [json new]
+    # set rcontent [json new]
     set ph [dict get $jmsg header]
 
     respond [jmsg::status $ph busy]
@@ -252,19 +244,12 @@ proc execute_request {jmsg} {
     } else {
         if {$result ne {} && ![dict get $magics noresult]} {
 	    set response [jmsg::newiopub $ph execute_result]
-	    dict with response {
-		set content [execute_result $exec_counter $result]
-	    }
+	    dict set response content [execute_result $exec_counter $result]
 	    respond $response
 	}
 	
 	json set rcontent status ok
-    set l [open "log.txt" a]
-    puts $l $rcontent
-    flush $l
-    close $l
 	json nest rcontent user_expressions [json new]
-	json set rcontent payload [json arr]
     }
 
     json set rcontent execution_count $exec_counter
@@ -283,5 +268,10 @@ proc execute_request {jmsg} {
 
 proc respond {jmsg} {
     variable ::master
+    # set l [open log.txt a]
+    # puts $l ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    # puts $l $jmsg
+    # flush $l
+    # close $l
     thread::send -async  $master [list respond $jmsg]
 }
