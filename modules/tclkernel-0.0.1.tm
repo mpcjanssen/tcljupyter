@@ -69,8 +69,8 @@ proc on_recv {port} {
 	# puts "...handling"
     }
     set zmsg [zmsg recv $ports($port)]
-    puts "\n\n\n\n$port [string repeat < 20]"
-    puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
+    # puts "\n\n\n\n$port [string repeat < 20]"
+    # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
     set jmsg [jmsg::new [list $port {*}$zmsg]]
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
@@ -91,8 +91,8 @@ proc on_recv {port} {
         return
     } 
 
-    puts ">>>>>>>>>>>>>>>>>>>>"
-    puts $jmsg
+    # puts ">>>>>>>>>>>>>>>>>>>>"
+    # puts $jmsg
 
     # wrap command in a catch to capture and handle interrupt messages
     thread::send -async $to [list set cmd [list $type $jmsg $to]]
