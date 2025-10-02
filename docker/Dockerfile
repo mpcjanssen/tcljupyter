@@ -50,7 +50,7 @@ ls &&\
 tclsh9.0 build.tcl install /usr/lib 
 
 # Install tcljupyter
-RUN git clone -b sqlite https://github.com/mpcjanssen/tcljupyter
+RUN git clone https://github.com/mpcjanssen/tcljupyter
 
 ## Install tclcurl
 #
