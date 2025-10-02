@@ -1,6 +1,5 @@
 package require jmsg
-package require rl_json 0.11.0-
-namespace import rl_json::json
+package require jlib
 
 set pipe {}
 set ph {}
@@ -25,52 +24,39 @@ proc writechan {name cmd args} {
 proc stream {name text} {
     variable ph
     set response [jmsg::newiopub $ph stream]
-    dict with response {
-        set content [json template {
-            {
-                "name":"~S:name",
-                "text":"~S:text"
-            }
-        }]
-    }
+    dict set response content [json new name $name text $text]
     respond $response
 }
 
 proc display_data {mimetype body id} {
     if {$mimetype ne "application/json"} {
-        set content [json template {
-            { 
-                "data":{"~S:mimetype": "~S:body"},
-                "metadata":{},
-                "transient":{
-                    "display_id":"~S:id"
-                }
-            }
-        }]
+        set content [json new] 
+        json nest content data [json new $mimetype $body]
+        json nest content metadata [json new]
+        json nest content transient [json new display_id $id]
+        
     } else {
-        set content [json template {
-            {
-                "data":{
-                    "~S:mimetype": "~J:body",
-                    "text/plain": "~S:body"
-                },
-                "metadata":{},
-                "transient":{
-                    "display_id":"~S:id"
-                }
-            }
-        }]
+        set data [json new text/plain $body]
+        json nest data $mimetype $body
+        set content [json new]
+        json nest content data $data
+        json set content metadata [json new]
+        json nest content transient [json new display_id $id]
     }
+    set l [open log.txt a]
+    puts $l $content
+    close $l
+    return $content
+
 }
 
 proc execute_result {n result {mimetype "text/plain"}} {
-    json template {
-	{
-	    "execution_count" : "~N:n",
-	    "data": {"~S:mimetype" : "~S:result"},
-	    "metadata" : {}
-	}
-    }
+    set data [json new $mimetype $result]
+    puts $data
+    set result [json new execution_count $n]
+    json nest result data $data
+    json nest result metadata "{}"
+    return $result
 }
 
 proc display {mimetype body} {
@@ -96,6 +82,11 @@ proc updatedisplay {id mimetype body} {
 }
 
 proc bgerror {jmsg errorInfo} {
+    set l [open log.txt a]
+    puts $l ERROR
+    puts $l $::errorInfo
+    flush $l
+    close $l
     variable exec_counter
     set ph [dict get $jmsg header]
     puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
@@ -103,14 +94,8 @@ proc bgerror {jmsg errorInfo} {
         set parent $ph
         set username [json get $ph username]
         set header  [jmsg::newheader $username execute_reply]
-        set content [json template {
-            {
-                "status":"ok",
-                "execution_count":"~N:exec_counter",
-                "user_expressions": {}
-
-            }
-        }]       
+        set content [json new status ok execution_count $exec_counter] 
+        json nest content user_expressions [json new]
     }
     respond $jmsg
     respond [jmsg::status $ph idle]  
@@ -137,16 +122,7 @@ proc complete_request {jmsg} {
         set parent $ph
         set username [json get $header username]
         set header  [jmsg::newheader $username complete_reply]
-        set content [json template {
-            {
-                "status":"ok",
-                "matches":"~J:matches",
-                "cursor_start":"~N:cursor_start",
-                "cursor_end":"~N:cursor_end"
-
-
-            }
-        }]       
+        set content [json template new status ok matches $matches cursor_start $cursor_start cursor_end $cursor_end]
     }
     respond $jmsg
     respond [jmsg::status $ph idle]
@@ -163,20 +139,20 @@ proc is_complete_request {jmsg} {
     set code [json get [dict get $jmsg content] code]
     append code \n
     if {[info complete $code]} {
-	set status "complete"
-	set indent_level 0
-	set lastPos 0
-    } else {
-	set status "incomplete"
-	set chunk [string range $code $lastPos end]
-	if {[regexp -lineanchor {\{$} $chunk]} {
-	    # puts incr
-	    incr indent_level
-	} elseif {[regexp -lineanchor {^\s*\}} $chunk]} {
-	    # puts decr
-	    incr indent_level -1
-	}
-	set lastPos [string length $code]
+        set status "complete"
+        set indent_level 0
+        set lastPos 0
+    }  {
+        set status "incomplete"
+        set chunk [string range $code $lastPos end]
+        if {[regexp -lineanchor {\{$} $chunk]} {
+            # puts incr
+            incr indent_level
+        } elseif {[regexp -lineanchor {^\s*\}} $chunk]} {
+            # puts decr
+            incr indent_level -1
+        }
+        set lastPos [string length $code]
     }
     # TODO: add indent hint for status "incomplete"
     set b [string repeat "  " $indent_level]
@@ -186,18 +162,13 @@ proc is_complete_request {jmsg} {
         set parent $ph
         set username [json get $header username]
         set header  [jmsg::newheader $username is_complete_reply]
-	if {$status eq "incomplete"} {
-	    set content [json template {
-		{
-		    "status":"~S:status",
-		    "indent":"~S:b"
-		}
-	    }]
-	} else {
-	    set content [json template {
-		{"status":"~S:status"}
-	    }]
-	}
+        if {$status eq "incomplete"} {
+            set content [json new status $status indent $b]
+
+        } else {
+            set content [json new status $status]
+
+        } 
     }
     # puts jmsg=$jmsg
     respond $jmsg
@@ -208,6 +179,7 @@ proc execute_request {jmsg} {
     variable ph
     variable exec_counter
     incr exec_counter
+    set rcontent [json new]
     set ph [dict get $jmsg header]
 
     respond [jmsg::status $ph busy]
@@ -215,12 +187,7 @@ proc execute_request {jmsg} {
     set code [json get [dict get $jmsg content] code]
     set response [jmsg::newiopub $ph execute_input]
     dict with response {
-        set content [json template {
-            {
-                "code":"~S:code",
-                "execution_count":"~N:exec_counter"
-            }
-        }]
+        set content [json new code $code execution_count $exec_counter]
     }
     respond $response
     set lines [split $code \n]
@@ -270,9 +237,9 @@ proc execute_request {jmsg} {
     }
     if {$error} {
         set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
-	json set rcontent ename [json string "Tcl error"]; # error code, if present
-	json set rcontent evalue [json string $result]
-	json set rcontent traceback [json array [list "string" $emsg]]
+	json set rcontent ename "Tcl error"; # error code, if present
+	json set rcontent evalue $result
+	json set rcontent traceback [json arr [list "string" $emsg]]
 	
 	set err [jmsg::newiopub $ph error]
 	dict with err {
@@ -280,7 +247,7 @@ proc execute_request {jmsg} {
 	}
 	puts stderr $emsg
 	
-	json set rcontent status [json string "error"]
+	json set rcontent status error
 	
     } else {
         if {$result ne {} && ![dict get $magics noresult]} {
@@ -291,12 +258,16 @@ proc execute_request {jmsg} {
 	    respond $response
 	}
 	
-	json set rcontent status [json string "ok"]
-	json set rcontent user_expressions [json object]
-	json set rcontent payload [json array]
+	json set rcontent status ok
+    set l [open "log.txt" a]
+    puts $l $rcontent
+    flush $l
+    close $l
+	json nest rcontent user_expressions [json new]
+	json set rcontent payload [json arr]
     }
 
-    json set rcontent execution_count [json number $exec_counter]
+    json set rcontent execution_count $exec_counter
 
     dict with jmsg {
         set parent $ph
@@ -312,5 +283,5 @@ proc execute_request {jmsg} {
 
 proc respond {jmsg} {
     variable ::master
-    thread::send -async $master [list respond $jmsg]
+    thread::send -async  $master [list respond $jmsg]
 }

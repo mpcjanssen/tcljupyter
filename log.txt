@@ -1,0 +1,15 @@
+started
+nest:	kernel_info: language_info->{"name":"Tcl","version":"8.6.13","mimetype":"txt/x-tcl","file_extension":".tcl"}
+set	varname: banner->Tcl 8.6.13 :: TclJupyter kernel 0.0.1 
+Protocol v5.3
+nest:	js: user->{}
+started
+nest:	kernel_info: language_info->{"name":"Tcl","version":"8.6.13","mimetype":"txt/x-tcl","file_extension":".tcl"}
+set	varname: banner->Tcl 8.6.13 :: TclJupyter kernel 0.0.1 
+Protocol v5.3
+nest:	js: user->{}
+started
+nest:	kernel_info: language_info->{"name":"Tcl","version":"8.6.13","mimetype":"txt/x-tcl","file_extension":".tcl"}
+set	varname: banner->Tcl 8.6.13 :: TclJupyter kernel 0.0.1 
+Protocol v5.3
+nest:	js: user->[]

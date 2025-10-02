@@ -69,8 +69,8 @@ proc on_recv {port} {
 	# puts "...handling"
     }
     set zmsg [zmsg recv $ports($port)]
-    # puts "\n\n\n\n$port [string repeat < 20]"
-    # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
+    puts "\n\n\n\n$port [string repeat < 20]"
+    puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
     set jmsg [jmsg::new [list $port {*}$zmsg]]
     set session [jmsg::session $jmsg]
     set type [jmsg::type $jmsg]
@@ -82,13 +82,17 @@ proc on_recv {port} {
         # Unsupported
         return
     }
+    if {$type eq "history_request"} {
+        # Unsupported
+        return
+    }
     if {$port eq "control"} {
         handle_control_request $jmsg
         return
     } 
 
-    # puts ">>>>>>>>>>>>>>>>>>>>"
-    # puts $jmsg
+    puts ">>>>>>>>>>>>>>>>>>>>"
+    puts $jmsg
 
     # wrap command in a catch to capture and handle interrupt messages
     thread::send -async $to [list set cmd [list $type $jmsg $to]]
@@ -204,27 +208,27 @@ proc handle_info_request {jmsg} {
         set username [json get $header username]
         set header  [jmsg::newheader $username kernel_info_reply] 
         set version [info patchlevel]
-	set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
-			$version \
-			$modver \
-			"5.3"]
-        set content [json template $::kernel_info]
+
+        set content $::kernel_info
     }
     respond $jmsg
     respond [jmsg::status $parent idle]
 }
-set kernel_info { {
-    "status" : "ok",
-    "protocol_version": "5.3",
-    "implementation": "tcljupyter",
-    "implementation_version": "~S:modver",
-    "language_info": {
-        "name": "tcl",
-        "version": "~S:version",
-        "mimetype": "txt/x-tcl",
-        "file_extension": ".tcl"
-    },
-    "banner" : "~S:banner"
-}}
+
+set version [info patchlevel]
+set language_info [json new name Tcl version $version mimetype txt/x-tcl file_extension .tcl]
+set kernel_info [json new status ok protocol_version 5.3 implementation tcljupyter implementation_version $modver]
+set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
+			$version \
+			$modver \
+			"5.3"]
+
+json nest kernel_info language_info $language_info
+json set kernel_info banner $banner
+
+puts $$$$$$$$$$$$$$$$$$$$$$$$
+puts $kernel_info
+puts $$$$$$$$$$$$$$$$$$$$$$$$
+
 
 

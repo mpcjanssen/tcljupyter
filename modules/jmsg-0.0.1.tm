@@ -1,19 +1,13 @@
-package require rl_json 0.11.0-
 package require sha256
 package require uuid
-namespace import ::rl_json::*
+package require jlib
+
 namespace eval jmsg {
     proc newheader {username msg_type} {
         set msg_id [newid]
         set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
-        json template {
-            {"msg_id":"~S:msg_id",
-                "msg_type":"~S:msg_type",
-                "username":"~S:username",
-                "date":"~S:date",
-                "version":"5.3"
-            }
-        }  
+        set js [json new msg_id $msg_id msg_type $msg_type username $username date $date version 5.3] 
+        return $js 
     }
 
 proc newid {} {
@@ -64,16 +58,14 @@ proc type {msg} {
 proc newiopub {parent msg_type} {
     set username [json get $parent username]
     set header [jmsg::newheader $username $msg_type]
-    set content [json template {{}}]
+    set content [json new]
     set jmsg [list port iopub uuid $msg_type delimiter "<IDS|MSG>" parent $parent header $header hmac {} metadata {{}} content $content]
     return $jmsg 
 }
 
 proc status {parent state} {
     set jmsg [newiopub $parent status]
-    dict with jmsg {
-	set content [json template {{"execution_state" : "~S:state"}}]   
-    }
+    dict set jmsg  content [json new execution_state $state] 
     return $jmsg    
-}
+    }
 }

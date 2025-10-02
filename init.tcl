@@ -10,8 +10,10 @@ package require tclkernel
 if {[llength $argv] == 0} {
   puts $auto_path
   puts [package require Thread]
-  puts [package require rl_json]
+  puts [package require sqlite3]
   puts [package require zmq]
+  set js [json new a b]
+  puts [json nest js user [json arr]]
   exit 0
 }
 lassign $argv connection_file
