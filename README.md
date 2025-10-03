@@ -4,8 +4,7 @@
 
 ### local
 
-- Run ./postBuild
-- Install all the packages downloaded into the src folder.
+- [TODO] add script for local build for now see `Dockerfile`
 - Manually copy the `kernel.json` to a subdirectory of the kernels directory in a Jupyter data location (one of `jupyter --paths`).
 
 Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
@@ -14,12 +13,6 @@ Jupyter will use the `kernel.json` file to start the kernel (passing the connect
 The `docker` folders contains a `Dockerfile` for building a tcljupyter container based on alpine. An example `docker-compose.yml` files is provided.
 
 Prebuilt images for amd64 and arm64 are on [Docker Hub](https://hub.docker.com/r/mpcjanssen/tcljupyter).
-
-### Binder
-
-If you want to try it out without installation you can use the Binder version in the cloud.
-
-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mpcjanssen/tcljupyter/binder?filepath=examples%2Fexample.ipynb) (with binary zmq library)
 
 
 ### Dependencies
