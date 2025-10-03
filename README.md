@@ -11,7 +11,7 @@
 Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
 
 ### Docker
-The `docker*` folders contain `Dockerfile`s for building a tcljupyter container based on alpine. An example `docker-compose.yml` files is provided.
+The `docker` folders contains a `Dockerfile` for building a tcljupyter container based on alpine. An example `docker-compose.yml` files is provided.
 
 Prebuilt images for amd64 and arm64 are on [Docker Hub](https://hub.docker.com/r/mpcjanssen/tcljupyter).
 
