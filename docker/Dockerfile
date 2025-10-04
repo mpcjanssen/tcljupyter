@@ -2,17 +2,26 @@
 #
 FROM alpine:latest
 
-ENV NOTEBOOKS=/notebooks
-ENV CONFIG=/config
+ENV UUID=1000
+ENV UGID=1000
+ENV NOTEBOOKS=/home/tcljupyter/notebooks
+ENV CONFIG=/home/tcljupyter/config
 ENV PORT=8888
-ENV TCLLIBPATH=/libs
+ENV TCLLIBPATH=/home/tcljupyter/libs
 ENV VENV=/venv
+
+RUN addgroup ${UGID}
+RUN adduser -D \
+    -u ${UUID} \
+    -G ${UGID} \
+    -h /home/tcljupyter \
+    tcljupyter
+
 
 # Install packages
 RUN \
-    --mount=type=cache,target=/var/cache/apk \
     apk update &&\
-    apk add autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil 
+    apk add --no-cache autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil 
 
 RUN python3 -m venv ${VENV}
 RUN \
@@ -61,15 +70,17 @@ RUN git clone https://github.com/mpcjanssen/tcljupyter
 
 # Install tcl libs
 RUN \
-    --mount=type=cache,target=/var/cache/apk \
     apk update &&\
-    apk add tcl-tls
+    apk add --no-cache tcl-tls
 
 # Install
-RUN mkdir -p /root/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh9.0","/src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl 9","language":"tcl","interrupt_mode":"message" }' > /root/.local/share/jupyter/kernels/tcl/kernel.json && mkdir -p ${CONFIG}
+RUN mkdir -p /home/tcljupyter/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh9.0","/src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl 9","language":"tcl","interrupt_mode":"message" }' > /home/tcljupyter/.local/share/jupyter/kernels/tcl/kernel.json && mkdir -p ${CONFIG}
 
 # Expose Jupyter port and start Jupyter
 EXPOSE ${PORT}
-COPY startup.sh /tmp/
-RUN mkdir -p ${NOTEBOOKS} ${TCLLIBPATH} && chmod a+x /tmp/startup.sh
-CMD ["/tmp/startup.sh"]
+COPY startup.sh /home/tcljupyter/
+RUN mkdir -p ${NOTEBOOKS} ${TCLLIBPATH} && chmod a+x /home/tcljupyter/startup.sh
+RUN chown -R ${UUID}:${UGID} /home/tcljupyter
+USER tcljupyter
+WORKDIR /home/tcljupyter
+CMD ["/home/tcljupyter/startup.sh"]

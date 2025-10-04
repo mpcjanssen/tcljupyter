@@ -1,16 +1,16 @@
 services:
   tcljupyter:
     container_name: tcljupyter
-    image: mpcjanssen/tcljupyter:alpine
+    image: mpcjanssen/tcljupyter:arm64
     ports:
-      - "127.0.0.1:7005:8888"
+      - 127.0.0.1:7005:8888
     volumes:
-      - notebooks:/notebooks
-      - config:/config
-      - libs:/libs
+      - notebooks:/home/tcljupyter/notebooks
+      - config:/home/tcljupyter/config
+      - libs:/home/tcljupyter/libs
     restart: unless-stopped
-    
 volumes:
-   config:
-   libs:
-   notebooks:
+  config:
+  libs:
+  notebooks:
+

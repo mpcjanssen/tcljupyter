@@ -9,4 +9,4 @@ if [ ! -f ${CONFIG}/jupyter_lab_config.py ]; then
 fi
 
 ${VENV}/bin/jupyter-lab --ip=0.0.0.0 --port=${PORT} --no-browser \
-  --notebook-dir=${NOTEBOOKS} --allow-root
+  --notebook-dir=${NOTEBOOKS}
