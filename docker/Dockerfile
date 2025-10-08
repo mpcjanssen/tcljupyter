@@ -7,7 +7,7 @@ ENV UGID=1000
 ENV NOTEBOOKS=/home/tcljupyter/notebooks
 ENV CONFIG=/home/tcljupyter/config
 ENV PORT=8888
-ENV TCLLIBPATH=/home/tcljupyter/libs
+ENV TCLLIBPATH=/home/tcljupyter/libs/lib
 ENV VENV=/venv
 
 RUN addgroup ${UGID}
@@ -75,6 +75,7 @@ RUN \
 
 # Install
 RUN mkdir -p /home/tcljupyter/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh9.0","/src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl 9","language":"tcl","interrupt_mode":"message" }' > /home/tcljupyter/.local/share/jupyter/kernels/tcl/kernel.json && mkdir -p ${CONFIG}
+COPY logo-svg.svg /home/tcljupyter/.local/share/jupyter/kernels/tcl/ 
 
 # Expose Jupyter port and start Jupyter
 EXPOSE ${PORT}
