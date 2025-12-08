@@ -7,10 +7,10 @@ services:
     volumes:
       - notebooks:/home/tcljupyter/notebooks
       - config:/home/tcljupyter/config
-      - libs:/home/tcljupyter/libs
+      - tcl:/home/tcljupyter/tcl
     restart: unless-stopped
 volumes:
   config:
-  libs:
+  tcl:
   notebooks:
 

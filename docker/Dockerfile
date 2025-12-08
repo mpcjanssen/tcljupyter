@@ -7,7 +7,7 @@ ENV UGID=1000
 ENV NOTEBOOKS=/home/tcljupyter/notebooks
 ENV CONFIG=/home/tcljupyter/config
 ENV PORT=8888
-ENV TCLLIBPATH=/home/tcljupyter/libs/lib
+ENV TCLLIBPATH=/home/tcljupyter/tcl/lib
 ENV VENV=/venv
 
 RUN addgroup ${UGID}
