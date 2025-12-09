@@ -1,7 +1,9 @@
 services:
   tcljupyter:
     container_name: tcljupyter
-    image: mpcjanssen/tcljupyter:arm64
+    image: mpcjanssen/tcljupyter:x86_64
+    environment:
+      - TCLLIBPATH=/home/tcljupyter/tcl/lib
     ports:
       - 127.0.0.1:7005:8888
     volumes:

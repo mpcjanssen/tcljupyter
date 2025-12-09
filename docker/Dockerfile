@@ -21,7 +21,7 @@ RUN adduser -D \
 # Install packages
 RUN \
     apk update &&\
-    apk add --no-cache autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil 
+    apk add --no-cache autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil alpine-sdk cmake
 
 RUN python3 -m venv ${VENV}
 RUN \
@@ -32,7 +32,7 @@ RUN \
 # Install tcl9
 RUN mkdir /src
 WORKDIR /src
-RUN wget -q http://prdownloads.sourceforge.net/tcl/tcl9.0.1-src.tar.gz -O - | tar zvx --one-top-level=tcl9 --strip-components 1 &&\
+RUN wget -q http://prdownloads.sourceforge.net/tcl/tcl9.0.3-src.tar.gz -O - | tar zvx --one-top-level=tcl9 --strip-components 1 &&\
 cd tcl9/unix &&\
 ./configure --prefix=/usr &&\
 make && make install
