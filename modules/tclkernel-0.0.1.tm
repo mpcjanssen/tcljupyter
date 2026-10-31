@@ -58,6 +58,8 @@ proc respond_body {jmsg} {
     }
 
     set zmsg [jmsg::znew $jmsg]
+    set frames [lmap frame [lrange $zmsg 3 end] {encoding convertto utf-8 $frame}]
+    set zmsg [lreplace $zmsg 3 end {*}$frames]
     # puts "$port [string repeat > 20]"
     # puts "RESPOND:\n[string range [join $zmsg \n] 0 1200]\n"
     zmq send_multipart $ports($port) $zmsg
