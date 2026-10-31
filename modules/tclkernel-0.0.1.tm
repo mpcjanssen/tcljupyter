@@ -14,23 +14,37 @@ array set ports {}
 set sessions {}
 set t {}
 
-zmq context context -io_threads 2
+set context [zmq ctx_new]
+zmq ctx_set $context -io_threads 2
 
 proc connect {connection_file} {
     variable conn
     variable ports
+    variable context
     set f [open $connection_file]
     set conn [read $f]
     set key [json get $conn key]
     interp alias {} hmac {}  sha2::hmac -hex -key $key 
 
     starthb
-    set ports(iopub) [zmq socket context PUB]
-    $ports(iopub) bind [address iopub]
+    set ports(iopub) [zmq socket $context XPUB]
+    zmq setsockopt $ports(iopub) XPUB_VERBOSE 1
+    zmq bind $ports(iopub) [address iopub]
+    zmq readable $ports(iopub) on_iopub_subscription
     listen shell ROUTER
     listen control ROUTER
     listen stdin ROUTER
     start [pid]
+}
+
+proc on_iopub_subscription {} {
+    variable ports
+    set subscription [zmq recv $ports(iopub)]
+    puts ssssss$subscription
+    binary scan $subscription c subscribed
+    if {$subscribed == 1} {
+        respond [jmsg::status [json new] idle]
+    }
 }
 
 proc respond_body {jmsg} {
@@ -46,10 +60,7 @@ proc respond_body {jmsg} {
     set zmsg [jmsg::znew $jmsg]
     # puts "$port [string repeat > 20]"
     # puts "RESPOND:\n[string range [join $zmsg \n] 0 1200]\n"
-    foreach msg [lrange $zmsg 0 end-1] {
-        $ports($port) sendmore $msg
-    }
-    $ports($port) send [lindex $zmsg end]
+    zmq send_multipart $ports($port) $zmsg
 }
 
 proc respond {jmsg} {
@@ -68,7 +79,7 @@ proc on_recv {port} {
     } {
 	# puts "...handling"
     }
-    set zmsg [zmsg recv $ports($port)]
+    set zmsg [zmq recv_multipart $ports($port)]
     # puts "\n\n\n\n$port [string repeat < 20]"
     # puts "REQ:\n[string range [join $zmsg \n] 0 1200]\n"
     set jmsg [jmsg::new [list $port {*}$zmsg]]
@@ -138,28 +149,18 @@ namespace export display updatedisplay html updatehtml
 }
 
 proc starthb {} {
-    set t [thread::create]
-    thread::send $t -async [list set auto_path $::auto_path]
-    thread::send $t -async {package require zmq}
-
-    thread::send $t -async [list zmq socket zsocket context REP]
-    thread::send $t -async [list zsocket bind [address hb]]
-    thread::send $t -async [list thread::wait]
-    thread::send $t -async [list zmq device FORWARDER zsocket zsocket]
 }
 
-proc listen_loop port {
-    on_recv $port
-    after 50 [list listen_loop $port]
-}
+
 
 proc listen {port type} {
     variable ports
-    set ports($port) [zmq socket context $type]
-    $ports($port) bind [address $port]
+    variable context
+    set ports($port) [zmq socket $context $type]
+    zmq bind $ports($port) [address $port]
+    zmq readable $ports($port) [list on_recv $port]
     # bit of a nasty hack because readable callback is a single
     # command without arguments
-    if {$port ne "iopub"} { listen_loop $port }
 }
 
 proc address {port} {
@@ -212,7 +213,7 @@ proc handle_info_request {jmsg} {
         set content $::kernel_info
     }
     respond $jmsg
-    respond [jmsg::status $parent idle]
+    after 100 [list respond [jmsg::status $parent idle]]
 }
 
 set version [info patchlevel]
