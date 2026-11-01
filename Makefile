@@ -1,10 +1,13 @@
-.PHONY: test install
+.PHONY: test install check-uv
 
 # Override with e.g. `make install KERNEL_DIR=~/.local/share/jupyter/kernels/tcljupyter`
 DATA_DIR = $(shell uv run jupyter --data-dir)
 KERNEL_DIR ?= $(DATA_DIR)/kernels/tcljupyter
 
-install:
+check-uv:
+	@command -v uv >/dev/null 2>&1 || { echo "Error: uv not found in PATH. Install it from https://docs.astral.sh/uv/" >&2; exit 1; }
+
+install: check-uv
 	@set -eu; \
 	tclsh=$${TCLSH:-$$(command -v tclsh9.0 || command -v tclsh)}; \
 	mkdir -p "$(KERNEL_DIR)"; \
@@ -13,7 +16,7 @@ install:
 		"$$tclsh" "$$(pwd)" > "$(KERNEL_DIR)/kernel.json"; \
 	echo "Installed tcljupyter kernel to $(KERNEL_DIR)"
 
-test:
+test: check-uv
 	@set -eu; \
 	kernels_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$kernels_dir"' EXIT; \
