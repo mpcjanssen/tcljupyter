@@ -240,11 +240,11 @@ proc handle_info_request {jmsg} {
 
 set version [info patchlevel]
 set language_info [json new name Tcl version $version mimetype txt/x-tcl file_extension .tcl]
-set kernel_info [json new status ok protocol_version 5.3 implementation tcljupyter implementation_version $modver]
+set kernel_info [json new status ok protocol_version 5.4 implementation tcljupyter implementation_version $modver]
 set banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
 			$version \
 			$modver \
-			"5.3"]
+			"5.4"]
 
 json nest kernel_info language_info $language_info
 json set kernel_info banner $banner

@@ -7,7 +7,7 @@ namespace eval jmsg {
     proc newheader {username msg_type} {
         set msg_id [newid]
         set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
-        set js [json new msg_id $msg_id msg_type $msg_type username $username date $date version 5.3] 
+        set js [json new msg_id $msg_id msg_type $msg_type username $username date $date version 5.4] 
         return $js 
     }
 
