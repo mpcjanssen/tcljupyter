@@ -40,7 +40,6 @@ proc connect {connection_file} {
 proc on_iopub_subscription {} {
     variable ports
     set subscription [zmq recv $ports(iopub)]
-    puts ssssss$subscription
     binary scan $subscription c subscribed
     if {$subscribed == 1} {
         respond [jmsg::status [json new] idle]
@@ -92,11 +91,11 @@ proc on_recv {port} {
         return
     }
     if {$type eq "comm_info_request"} {
-        # Unsupported
+        handle_empty_reply $jmsg comm_info_reply comms [json new]
         return
     }
     if {$type eq "history_request"} {
-        # Unsupported
+        handle_empty_reply $jmsg history_reply history [json arr]
         return
     }
     if {$port eq "control"} {
@@ -116,6 +115,17 @@ proc on_recv {port} {
             # puts $::errorInfo
         }
     }
+}
+
+proc handle_empty_reply {jmsg reply_type content_key content_value} {
+    dict with jmsg {
+        set parent $header
+        set username [json get $header username]
+        set header [jmsg::newheader $username $reply_type]
+        set content [json new]
+        json nest content $content_key $content_value
+    }
+    respond $jmsg
 }
 
 proc start {pid} {
