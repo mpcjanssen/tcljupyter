@@ -32,16 +32,10 @@ RUN \
 # Install tcl9
 RUN mkdir /src
 WORKDIR /src
-RUN wget -q http://prdownloads.sourceforge.net/tcl/tcl9.0.3-src.tar.gz -O - | tar zvx --one-top-level=tcl9 --strip-components 1 &&\
+RUN wget -q http://prdownloads.sourceforge.net/tcl/tcl9.0.4-src.tar.gz -O - | tar zvx --one-top-level=tcl9 --strip-components 1 &&\
 cd tcl9/unix &&\
 ./configure --prefix=/usr &&\
 make && make install
-
-# Install critcl
-RUN wget -q  http://github.com/andreas-kupries/critcl/tarball/3.3.1 -O - | tar zvx  --one-top-level=critcl --strip-components 1 &&\
-cd ./critcl &&\
-ls &&\
-tclsh9.0 build.tcl install 
 
 # Install tcllib
 RUN wget -q https://core.tcl-lang.org/tcllib/uv/tcllib-2.0.tar.gz -O - | tar zvx --one-top-level=tcllib --strip-components 1 &&\
@@ -50,12 +44,6 @@ ls &&\
 ./configure --prefix=/usr &&\
 make && make install 
 
-
-# Install zmq
-RUN wget -q  https://github.com/mpcjanssen/tclzmq/archive/tcl9.tar.gz -O - | tar zvx  --one-top-level=tclzmq --strip-components 1 &&\
-cd ./tclzmq &&\
-ls &&\
-tclsh9.0 build.tcl install /usr/lib 
 
 # Install tcljupyter
 RUN git clone https://github.com/mpcjanssen/tcljupyter
