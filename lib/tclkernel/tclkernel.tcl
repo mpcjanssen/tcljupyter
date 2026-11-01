@@ -1,11 +1,10 @@
+package provide tclkernel 0.9.0
 package require zmq
 package require Thread
 package require jmsg
 
 
-set script [file normalize [info script]]
-set modfile [file root [file tail $script]]
-lassign [split $modfile -] _ modver
+set modver [package provide tclkernel]
 
 set conn {}
 set kernel_id [jmsg::newid]

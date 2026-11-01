@@ -1,3 +1,4 @@
+package provide sessionclient 0.0.1
 package require jmsg
 package require jlib
 

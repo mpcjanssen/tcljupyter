@@ -3,6 +3,7 @@ param(
     [string]$Tclsh = 'tclsh'
 )
 $ErrorActionPreference = 'Stop'
+$root = Split-Path -Parent $PSScriptRoot
 
 if (Test-Path $KernelDir) {
     Write-Error "$KernelDir already exists. Remove it first."
@@ -10,10 +11,10 @@ if (Test-Path $KernelDir) {
 }
 
 New-Item -ItemType Directory -Force $KernelDir | Out-Null
-Copy-Item (Join-Path $PSScriptRoot 'logo-svg.svg') $KernelDir -Force
+Copy-Item (Join-Path $root 'logo-svg.svg') $KernelDir -Force
 
 $spec = @{
-    argv           = @($Tclsh, (Join-Path $PSScriptRoot 'init.tcl'), '{connection_file}')
+    argv           = @($Tclsh, (Join-Path $root 'init.tcl'), '{connection_file}')
     display_name   = 'Tcl'
     language       = 'tcl'
     interrupt_mode = 'message'

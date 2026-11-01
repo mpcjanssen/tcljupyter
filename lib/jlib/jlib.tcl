@@ -1,3 +1,4 @@
+package provide jlib 0.0.1
 package require sqlite3
 
 namespace eval json {

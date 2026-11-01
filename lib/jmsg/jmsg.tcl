@@ -1,3 +1,4 @@
+package provide jmsg 0.0.1
 package require sha256
 package require uuid
 package require jlib

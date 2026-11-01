@@ -1,7 +1,5 @@
 #lang tcl
 
-tcl::tm::path add [file join [file dirname [info script]] modules]
-tcl::tm::path add ~/Src/site-tcl/modules
 lappend auto_path [file join [file dirname [info script]] lib]
 
 package require Tcl 8.6-

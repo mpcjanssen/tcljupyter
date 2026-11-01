@@ -2,4 +2,6 @@ kernel.json
 .ipynb_checkpoints/
 src/
 
+
 Untitled*.ipynb
+.tcl-lsp/
