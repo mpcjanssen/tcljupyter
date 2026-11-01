@@ -276,3 +276,34 @@ proc respond {jmsg} {
     # close $l
     thread::send -async  $master [list respond $jmsg]
 }
+
+# Prepare the worker thread: redirect output and create the user interpreter
+proc session_init {} {
+    chan push stdout {writechan stdout}
+    chan push stderr {writechan stderr}
+    interp create slave
+    interp alias slave ::jupyter::display {} display
+    interp alias slave ::jupyter::updatedisplay {} updatedisplay
+    interp alias slave ::jupyter::complete slave ::jupyter::defaultcomplete
+    slave eval {
+        namespace eval jupyter {
+            proc defaultcomplete {code pos} {
+                return [list {} $pos]
+            }
+            proc html {body} {
+                return [display text/html $body]
+            }
+            proc updatehtml {id body} {
+                return [updatedisplay $id text/html $body]
+            }
+            namespace export display updatedisplay html updatehtml
+        }
+    }
+}
+
+# Run a request handler, reporting errors (and interrupts) back to the client
+proc dispatch_request {type jmsg} {
+    if {[catch {$type $jmsg} result]} {
+        bgerror $jmsg $::errorInfo
+    }
+}
