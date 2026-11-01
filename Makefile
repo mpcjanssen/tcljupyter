@@ -9,6 +9,7 @@ check-uv:
 
 install: check-uv
 	@set -eu; \
+	if [ -e "$(KERNEL_DIR)" ]; then echo "Error: $(KERNEL_DIR) already exists. Remove it first." >&2; exit 1; fi; \
 	tclsh=$${TCLSH:-$$(command -v tclsh9.0 || command -v tclsh)}; \
 	mkdir -p "$(KERNEL_DIR)"; \
 	cp logo-svg.svg "$(KERNEL_DIR)/"; \

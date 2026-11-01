@@ -4,6 +4,11 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+if (Test-Path $KernelDir) {
+    Write-Error "$KernelDir already exists. Remove it first."
+    exit 1
+}
+
 New-Item -ItemType Directory -Force $KernelDir | Out-Null
 Copy-Item (Join-Path $PSScriptRoot 'logo-svg.svg') $KernelDir -Force
 
