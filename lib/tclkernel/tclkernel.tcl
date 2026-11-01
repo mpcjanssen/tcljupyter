@@ -105,15 +105,7 @@ proc on_recv {port} {
     # puts ">>>>>>>>>>>>>>>>>>>>"
     # puts $jmsg
 
-    # wrap command in a catch to capture and handle interrupt messages
-    thread::send -async $to [list set cmd [list $type $jmsg $to]]
-    thread::send -async $to {
-        lassign $cmd type jmsg to
-        if {[catch {$type $jmsg} result]} {
-            bgerror $jmsg $::errorInfo
-            # puts $::errorInfo
-        }
-    }
+    thread::send -async $to [list dispatch_request $type $jmsg]
 }
 
 proc handle_empty_reply {jmsg reply_type content_key content_value} {
@@ -136,27 +128,8 @@ proc start {pid} {
     thread::send $t [list tcl::tm::path add {*}[tcl::tm::path list]]
     thread::send $t {
         package require sessionclient
-        chan push stdout {writechan stdout} 
-        chan push stderr {writechan stderr} 
-        interp create slave
-        interp alias slave ::jupyter::display {} display
-        interp alias slave ::jupyter::updatedisplay {} updatedisplay
-        interp alias slave ::jupyter::complete slave ::jupyter::defaultcomplete
-        slave eval {
-            namespace eval jupyter {
-                proc defaultcomplete {code pos} {
-                    return [list {} $pos]
-                }
-proc html {body} {
-    return [display text/html $body]
-}
-proc updatehtml {id body} {
-    return [updatedisplay $id text/html $body]
-}
-namespace export display updatedisplay html updatehtml
-}
-}
-}
+        session_init
+    }
 }
 
 proc starthb {} {
