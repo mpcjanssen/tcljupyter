@@ -1,4 +1,8 @@
-.PHONY: test
+.PHONY: test install
+
+# Usage: make -f Makefile.win install
+install:
+	powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
 
 # Usage: make -f Makefile.win test
 test:
