@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.14"
 
 [[package]]
@@ -1392,7 +1392,7 @@ wheels = [
 [[package]]
 name = "tcljupyter"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "jupyter-kernel-test" },
     { name = "jupyterlab" },
