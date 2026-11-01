@@ -32,7 +32,7 @@ RUN \
 # Install tcl9
 RUN mkdir /src
 WORKDIR /src
-RUN wget -q http://prdownloads.sourceforge.net/tcl/tcl9.0.4-src.tar.gz -O - | tar zvx --one-top-level=tcl9 --strip-components 1 &&\
+RUN wget -q http://prdownloads.sourceforge.net/tcl/tcl9.1.0-src.tar.gz -O - | tar zvx --one-top-level=tcl9 --strip-components 1 &&\
 cd tcl9/unix &&\
 ./configure --prefix=/usr &&\
 make && make install
