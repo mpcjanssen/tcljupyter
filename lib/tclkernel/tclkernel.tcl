@@ -160,6 +160,17 @@ namespace export display updatedisplay html updatehtml
 }
 
 proc starthb {} {
+    variable context
+    variable ports
+    set ports(hb) [zmq socket $context REP]
+    zmq bind $ports(hb) [address hb]
+    zmq readable $ports(hb) on_hb
+}
+
+proc on_hb {} {
+    variable ports
+    set message [zmq recv_multipart $ports(hb)]
+    zmq send_multipart $ports(hb) $message
 }
 
 

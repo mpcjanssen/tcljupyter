@@ -1,4 +1,4 @@
-# Socket-type specific routing: ROUTER (RFC 28), PUB/SUB/XPUB/XSUB (RFC 29).
+# Socket-type specific routing: ROUTER (RFC 28), REP, PUB/SUB/XPUB/XSUB (RFC 29).
 # Other types use the engine's generic load-balance / fair-queue routing.
 
 proc ::zmq::TypeName {socket} {
@@ -149,6 +149,50 @@ proc ::zmq::SendSubscription {socket subscribe topic} {
             Write $conn [SubscriptionFrame $subscribe $topic]
         }
     }
+}
+
+# REP: split off the envelope (frames up to and including the empty delimiter).
+# Returns {conn envelope} to keep with the request, or "" if it is not a request.
+proc ::zmq::RepRequest {conn framesVar} {
+    upvar 1 $framesVar frames
+    set idx [lsearch -exact $frames ""]
+    if {$idx < 0 || $idx == [llength $frames] - 1} {
+        return ""
+    }
+    set envelope [lrange $frames 0 $idx]
+    set frames [lrange $frames [expr {$idx + 1}] end]
+    return [list $conn $envelope]
+}
+
+# REP: the reply goes to the peer of the pending request, behind its envelope.
+# Sending without a pending request fails with EFSM; a vanished peer drops the reply.
+proc ::zmq::RepSend {socket data more} {
+    variable sockets
+    set conn [dict get $sockets($socket) outconn]
+    if {$conn eq ""} {
+        set reply [dict get $sockets($socket) reply]
+        if {$reply eq ""} {
+            Fail EFSM
+        }
+        lassign $reply conn envelope
+        foreach frame $envelope {
+            set conn [RepWrite $conn $frame 1]
+        }
+    }
+    set conn [RepWrite $conn $data $more]
+    dict set sockets($socket) outconn [expr {$more ? $conn : ""}]
+    if {!$more} {
+        dict set sockets($socket) reply {}
+    }
+}
+
+proc ::zmq::RepWrite {conn frame more} {
+    variable conns
+    if {$conn ne "dropped" && [info exists conns($conn)]
+            && [Write $conn [zmtp::frame $frame $more]]} {
+        return $conn
+    }
+    return dropped
 }
 
 # ROUTER: the first frame names the destination peer and is not sent.

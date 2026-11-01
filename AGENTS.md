@@ -7,3 +7,4 @@
 - Windows: `make.exe` with PowerShell as `SHELL` breaks on multi-line recipes (quoting, `.ONESHELL`). Keep logic in `.ps1` scripts and have `Makefile.win` just call them.
 - `Untitled*.ipynb` is gitignored; don't commit scratch notebooks.
 - Before committing, check `git status` first and avoid `git add -A` so unrelated notebook changes aren't included.
+- Before repository work, verify the current project tree and active package/source resolution; prior paths and workspace context may be stale after a pull or branch change.

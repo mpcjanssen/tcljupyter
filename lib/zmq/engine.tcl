@@ -261,7 +261,14 @@ proc ::zmq::Deliver {conn} {
     if {![RouteIncoming $conn frames]} {
         return
     }
-    Enqueue $socket $frames [dict get $conns($conn) props]
+    set origin {}
+    if {[TypeName $socket] eq "REP"} {
+        set origin [RepRequest $conn frames]
+        if {$origin eq ""} {
+            return
+        }
+    }
+    Enqueue $socket $frames [dict get $conns($conn) props] $origin
     set hwm [dict get $sockets($socket) options $const(ZMQ_RCVHWM)]
     if {[info exists conns($conn)] && $hwm > 0
             && [llength [dict get $sockets($socket) inq]] >= $hwm} {
@@ -270,9 +277,9 @@ proc ::zmq::Deliver {conn} {
     }
 }
 
-proc ::zmq::Enqueue {socket frames props} {
+proc ::zmq::Enqueue {socket frames props {origin {}}} {
     variable sockets
-    dict lappend sockets($socket) inq [list $frames $props]
+    dict lappend sockets($socket) inq [list $frames $props $origin]
     Notify $socket
 }
 
@@ -338,14 +345,19 @@ proc ::zmq::Events {socket} {
         set events [expr {$events | $const(ZMQ_POLLIN)}]
     }
     if {[CanSend $socket]} {
-        # These types never block on send: they route or drop.
-        set writable [expr {[TypeName $socket] in {ROUTER PUB XPUB XSUB}
-            || [dict get $state outconn] ne ""}]
-        foreach conn [dict get $state pipes] {
-            if {$writable} {
-                break
+        if {[TypeName $socket] eq "REP"} {
+            # Only a pending request can be answered.
+            set writable [expr {[dict get $state reply] ne "" || [dict get $state outconn] ne ""}]
+        } else {
+            # These types never block on send: they route or drop.
+            set writable [expr {[TypeName $socket] in {ROUTER PUB XPUB XSUB}
+                || [dict get $state outconn] ne ""}]
+            foreach conn [dict get $state pipes] {
+                if {$writable} {
+                    break
+                }
+                set writable [expr {[dict get $conns($conn) state] eq "ready"}]
             }
-            set writable [expr {[dict get $conns($conn) state] eq "ready"}]
         }
         if {$writable} {
             set events [expr {$events | $const(ZMQ_POLLOUT)}]
@@ -376,6 +388,9 @@ proc ::zmq::SendFrame {socket data flags} {
         PUB - XPUB - XSUB {
             return [FanoutSend $socket $data $more]
         }
+        REP {
+            return [RepSend $socket $data $more]
+        }
     }
     set conn [dict get $sockets($socket) outconn]
     if {$conn eq ""} {
@@ -399,6 +414,9 @@ proc ::zmq::RecvFrame {socket flags} {
     variable sockets
     variable const
     if {![llength [dict get $sockets($socket) curmsg]]} {
+        if {[TypeName $socket] eq "REP" && [dict get $sockets($socket) reply] ne ""} {
+            Fail EFSM
+        }
         set deadline [Deadline $socket ZMQ_RCVTIMEO $flags]
         while {![llength [dict get $sockets($socket) inq]]} {
             if {$deadline >= 0 && [clock milliseconds] >= $deadline} {
@@ -408,10 +426,11 @@ proc ::zmq::RecvFrame {socket flags} {
             Live $socket
         }
         set inq [dict get $sockets($socket) inq]
-        lassign [lindex $inq 0] frames props
+        lassign [lindex $inq 0] frames props origin
         dict set sockets($socket) inq [lrange $inq 1 end]
         dict set sockets($socket) curmsg $frames
         dict set sockets($socket) curprops $props
+        dict set sockets($socket) reply $origin
         Unstall $socket
     }
     set rest [lassign [dict get $sockets($socket) curmsg] data]

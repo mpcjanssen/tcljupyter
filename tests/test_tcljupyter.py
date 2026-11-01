@@ -57,5 +57,8 @@ class TclJupyterTests(jkt.KernelTests):
         execution_count_2 = reply2['content']['execution_count']
         self.assertEqual(execution_count_1 + 1, execution_count_2)
 
+    def test_heartbeat(self):
+        self.assertTrue(self.kc.hb_channel.is_beating())
+
 if __name__ == '__main__':
     unittest.main()

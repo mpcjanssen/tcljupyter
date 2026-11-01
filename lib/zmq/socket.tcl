@@ -96,7 +96,7 @@ proc ::zmq::socket {ctx type} {
         pipes {} inq {} curmsg {} curprops {} outconn {} rr 0 \
         readable {} readableTimer {} \
         routes {} nextRid [expr {int(rand() * 0xFFFFFFFF)}] \
-        fanout {} fanoutMore 0 subcount {}]
+        fanout {} fanoutMore 0 subcount {} reply {}]
     dict lappend ctxs($ctx) sockets $handle
     return $handle
 }
