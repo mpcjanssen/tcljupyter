@@ -1394,6 +1394,7 @@ name = "tcljupyter"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "jupyter-kernel-test" },
     { name = "jupyterlab" },
 ]
 
@@ -1404,7 +1405,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "jupyterlab", specifier = ">=4.6.5" }]
+requires-dist = [
+    { name = "jupyter-kernel-test", specifier = ">=0.7.0" },
+    { name = "jupyterlab", specifier = ">=4.6.5" },
+]
 
 [package.metadata.requires-dev]
 dev = [

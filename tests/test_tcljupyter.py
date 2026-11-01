@@ -8,7 +8,7 @@ class TclJupyterTests(jkt.KernelTests):
     kernel_name = "tcljupyter"
 
     # language_info.name in a kernel_info_reply should match this
-    language_name = "tcl"
+    language_name = "Tcl"
 
     # Optional --------------------------------------
 
@@ -21,7 +21,7 @@ class TclJupyterTests(jkt.KernelTests):
     # Samples of code which generate a result value (ie, some text
     # displayed as Out[n])
     code_execute_result = [
-        {'code': 'expr {6 * 7}', 'result': '42'}
+        {'code': 'expr {6 * 7}', 'result': 42}
     ]
 
     # Tests on is_complete_* interactions between frontend and kernel

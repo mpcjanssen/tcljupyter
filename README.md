@@ -59,13 +59,9 @@ Magics are lines starting with `%%` at the top of the cell.
 
 ## Test suite
 
-A prequisite is the [jupyter_kernel_test](https://github.com/jupyter/jupyter_kernel_test) (JKT) module:
-
-`pip install jupyter_kernel_test`
-
 To run the test suite, execute (from within the checkout directory):
 
-`python -m tests.test_tcljupyter`
+`make test`
 
 
 ## Design
