@@ -1,0 +1,5 @@
+.PHONY: test
+
+# Usage: make -f Makefile.win test
+test:
+	powershell -NoProfile -ExecutionPolicy Bypass -File tests\run-tests.ps1
