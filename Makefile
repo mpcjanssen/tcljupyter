@@ -10,7 +10,7 @@ check-uv:
 install: check-uv
 	@set -eu; \
 	if [ -e "$(KERNEL_DIR)" ]; then echo "Error: $(KERNEL_DIR) already exists. Remove it first." >&2; exit 1; fi; \
-	tclsh=$${TCLSH:-$$(command -v tclsh9.0 || command -v tclsh)}; \
+	tclsh=$${TCLSH:-$$(command -v tclsh9.1 || command -v tclsh)}; \
 	mkdir -p "$(KERNEL_DIR)"; \
 	cp logo-svg.svg "$(KERNEL_DIR)/"; \
 	printf '{"argv":["%s","%s/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}\n' \
@@ -22,7 +22,7 @@ test: check-uv
 	kernels_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$kernels_dir"' EXIT; \
 	mkdir -p "$$kernels_dir/kernels/tcljupyter"; \
-	tclsh=$${TCLSH:-$$(command -v tclsh9.0 || command -v tclsh)}; \
+	tclsh=$${TCLSH:-$$(command -v tclsh9.1 || command -v tclsh)}; \
 	printf '{"argv":["%s","%s/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}\n' \
 		"$$tclsh" "$$(pwd)" > "$$kernels_dir/kernels/tcljupyter/kernel.json"; \
 	JUPYTER_PATH="$$kernels_dir" uv run python -m tests.test_tcljupyter
