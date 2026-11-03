@@ -23,11 +23,11 @@ namespace eval tclkernel {
     json set kernel_info banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
         $version $modver 5.4]
 
-    # Write a trace line to stderr when TCLJUPYTER_DEBUG is set
-    proc debug {text} {
-        if {[info exists ::env(TCLJUPYTER_DEBUG)]} {
-            puts stderr $text
-        }
+    # Write a trace line to stderr; a no-op unless TCLJUPYTER_DEBUG is set
+    if {[info exists ::env(TCLJUPYTER_DEBUG)]} {
+        proc debug {text} {puts stderr $text}
+    } else {
+        proc debug {text} {}
     }
 
     proc connect {connection_file} {
