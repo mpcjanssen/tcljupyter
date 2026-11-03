@@ -2,42 +2,34 @@
 
 ## Installation
 
-### local
+### Local
 
-- [TODO] add script for local build for now see `Dockerfile`
-- Manually copy the `kernel.json` to a subdirectory of the kernels directory in a Jupyter data location (one of `jupyter --paths`).
+With Tcl and Jupyter installed, install the kernel spec from the checkout directory:
 
-Jupyter will use the `kernel.json` file to start the kernel (passing the connection file as the first parameter).
+- Unix: `make install`
+- Windows: `make -f Makefile.win install`
+
+The installer adds `kernel.json` and the logo to Jupyter's kernels directory. It does not install Tcl or its packages. On Windows, the install script defaults to `tclsh` on `PATH`; pass `-Tclsh <path>` to `scripts/install.ps1` to select another interpreter. The Unix Makefile uses `uv` to locate Jupyter's data directory.
+
+Jupyter uses `kernel.json` to start the kernel and passes the connection file as the first argument.
 
 ### Docker
-The `docker` folders contains a `Dockerfile` for building a tcljupyter container based on alpine. An example `docker-compose.yml` files is provided.
+
+The `docker` folder contains a `Dockerfile` for building a tcljupyter container based on Alpine. An example `docker-compose.yml` file is provided.
 
 Prebuilt images for amd64 and arm64 are on [Docker Hub](https://hub.docker.com/r/mpcjanssen/tcljupyter).
 
-
 ### Dependencies
 
-The Tcl used to run the `init.tcl` script should have the following available:
+The Tcl interpreter used to run `init.tcl` must be Tcl 8.6 or newer and provide:
 
-- Tcl 8.6 or higer with threads and sqlite
-- [tclzmq](https://github.com/jdc8/tclzmq) (Not for the tclonly version) 
-- [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) uuid
-- [tcllib](https://core.tcl-lang.org/tcllib/doc/trunk/embedded/index.md) sha256
+- The Tcl Thread extension (`Thread`).
+- The Tcl SQLite binding (`sqlite3`), with SQLite JSON functions enabled.
+- Tcllib's `uuid` and `sha256` packages.
 
-### Build tclzmq on windows
+The ZeroMQ-compatible transport implementation is included in `lib/zmq`; the external `tclzmq` package and `libzmq` are not required. A Jupyter installation is also needed to launch the kernel.
 
-Easiest way to build tclzmq on Windows is to use mingw.
-
-- Install tcllib
-- Install critcl
-- Install the msys zmq packages
-
-```
-pacman -Syu mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-zeromq
-```
-- Run the `build.tcl` installer from the tclzmq distro. NB: Static builds don't work in the sense that they are the same as shared builds.
-
-
+Python and `uv` are only needed for the test suite (and `uv` is used by the Unix `make install` target to locate Jupyter).
 ## Supported
 
 Most web client commands are supported. Only thing missing is reading from stdin with for example `gets`. 
@@ -59,9 +51,12 @@ Magics are lines starting with `%%` at the top of the cell.
 
 ## Test suite
 
-To run the test suite, execute (from within the checkout directory):
+The test suite requires Python 3.14 or newer and `uv`. Run these commands from the checkout directory:
 
-`make test`
+- Unix: `make test`
+- Windows: `make -f Makefile.win test`
+
+The test command creates a temporary Jupyter kernelspec; you do not need to install the kernel first. Tcl and its runtime packages listed above must still be available.
 
 
 ## Design
