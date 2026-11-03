@@ -61,8 +61,69 @@ The test command creates a temporary Jupyter kernelspec; you do not need to inst
 
 ## Design
 
-![Design](http://www.plantuml.com/plantuml/png/TOx12eCm44Jl-Oh5kpyWfPUSGexnA9H5bnf8rpIR2ltxrYXM3xtEl7bCn9HzxoDoXae7JvmxTYJY9wu01RHJySXOIaoXLFRSRAkEsp4H3WLnxH_6SAOKLyOefHtKzHKiD93e-IB9IjaIkRQ14Na8T7l8NRaMbj0qG3C6XNtsCsPQ9CxiWy5B3FWkzABz9QjKkmDZO5ibabV8Qg2JTLTizVVgfQwtgn8d5le0)
+```mermaid
+sequenceDiagram
+    autonumber
+    participant FE as Frontend (Jupyter)
+    participant K as Main thread (tclkernel)
+    participant W as Worker thread (sessionclient)
+    participant C as child interp (user code)
 
-For communication from kernel to session thread [thread::send -async] is being used. `stdout` and `stderr` are being intercepted by `chan push`
+    Note over FE,K: Startup and liveness
+    FE->>K: hb ping (REP socket)
+    K-->>FE: echo
+    FE->>K: subscribe on iopub (XPUB)
+    K-->>FE: iopub status: idle
+
+    Note over FE,K: Requests answered by the main thread
+    FE->>K: shell: kernel_info_request / comm_info_request / history_request
+    K-->>FE: iopub status: busy
+    K-->>FE: shell: kernel_info_reply (or empty comm/history reply)
+    K-->>FE: iopub status: idle
+
+    Note over FE,C: execute_request
+    FE->>K: shell: execute_request
+    K->>K: on_recv: verify HMAC, parse message
+    K-)W: thread::send -async dispatch_request
+    W-)K: thread::send -async respond (iopub status: busy)
+    K-->>FE: iopub status: busy
+    W-)K: respond (iopub execute_input)
+    K-->>FE: iopub execute_input
+    W->>W: parse_magics
+    W->>C: run_code (child eval)
+
+    opt user code calls gets stdin
+        C->>W: ::jupyter::input
+        W-)K: respond (input_request on stdin port)
+        K-->>FE: stdin: input_request
+        FE->>K: stdin: input_reply
+        K-)W: dispatch_request input_reply
+        W-->>C: value (vwait ends)
+    end
+
+    opt user code prints or calls jupyter::display
+        C->>W: stdout/stderr channel or display
+        W-)K: respond (stream / display_data)
+        K-->>FE: iopub stream / display_data
+    end
+
+    C-->>W: result or error
+    W-)K: respond (iopub execute_result)
+    K-->>FE: iopub execute_result
+    W-)K: respond (execute_reply)
+    K-->>FE: shell: execute_reply
+    W-)K: respond (iopub status: idle)
+    K-->>FE: iopub status: idle
+
+    Note over FE,W: Control channel
+    FE->>K: control: interrupt_request
+    K->>W: thread::cancel (aborts running code)
+    K-->>FE: control: interrupt_reply
+    FE->>K: control: shutdown_request
+    K-->>FE: control: shutdown_reply
+    K->>K: exit
+```
+
+The main thread (`lib/tclkernel`) owns the ZMQ sockets and routing. User code runs in a worker thread (`lib/sessionclient`) inside a `child` interpreter, so a running cell can be interrupted with `thread::cancel`. The two threads communicate with `thread::send -async`, and the worker's `stdout` and `stderr` are intercepted with `chan push` and sent to the notebook as `stream` messages.
 
 
