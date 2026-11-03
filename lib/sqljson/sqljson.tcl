@@ -1,12 +1,13 @@
 package require sqlite3
 
 namespace eval ::sqljson {
-    namespace export decode get jset template str num bool null object array
+    namespace export decode get isnull jset template str num bool null object array
     namespace ensemble create
     sqlite3 [namespace current]::db :memory:
 }
 
-# JSON text -> Tcl value: objects become dicts, arrays lists, null "".
+# JSON text -> Tcl value: objects become dicts (keys with a null value are
+# omitted), arrays lists (null elements become ""), a top-level null "".
 proc ::sqljson::decode {json} {
     if {[string trim $json] eq ""} {
         return ""
@@ -23,7 +24,9 @@ proc ::sqljson::Convert {value type} {
         object {
             set result [dict create]
             db eval {SELECT key AS k, value AS v, type AS t FROM json_each(:value)} {
-                dict set result $k [Convert $v $t]
+                if {$t ne "null"} {
+                    dict set result $k [Convert $v $t]
+                }
             }
             return $result
         }
@@ -54,6 +57,14 @@ proc ::sqljson::Path {path} {
 proc ::sqljson::get {json path} {
     set path [Path $path]
     db onecolumn {SELECT json_extract(CAST(:json AS TEXT), :path)}
+}
+
+# True if the value at path is JSON null or the path does not exist (decode
+# treats both the same, by omitting the key).
+proc ::sqljson::isnull {json path} {
+    set path [Path $path]
+    db onecolumn {SELECT json_type(CAST(:json AS TEXT), :path) IS NULL
+        OR json_type(CAST(:json AS TEXT), :path) = 'null'}
 }
 
 # Set the value at path in the JSON text held in varname, creating or

@@ -18,11 +18,12 @@ number, etc.
 ### `sqljson decode json`
 
 Converts JSON text to a Tcl value: objects become dicts, arrays become lists,
-`true`/`false` become `true`/`false`, `null` becomes an empty string. An empty
-input returns an empty string.
+`true`/`false` become `true`/`false`. A `null` object member is omitted from
+the dict; a `null` array element (to keep indices stable) or a top-level `null`
+becomes an empty string. An empty input returns an empty string.
 
 ```tcl
-sqljson decode {{"a":[1,2],"b":{"c":"x"}}}   ;# a {1 2} b {c x}
+sqljson decode {{"a":[1,2],"b":{"c":"x"},"d":null}}   ;# a {1 2} b {c x}
 ```
 
 ### `sqljson get json path`
@@ -37,6 +38,18 @@ whole document. A path containing `[` must be braced in Tcl scripts.
 sqljson get $msg header.msg_type
 sqljson get $list {[2]}
 sqljson get $msg ""
+```
+
+### `sqljson isnull json path`
+
+Returns 1 if the value at `path` is JSON `null` or the path does not exist
+(consistent with `decode`, which omits null members), otherwise 0. Empty
+strings, `0` and `false` are not null.
+
+```tcl
+sqljson isnull {{"a":null,"b":""}} a    ;# 1
+sqljson isnull {{"a":null,"b":""}} c    ;# 1
+sqljson isnull {{"a":null,"b":""}} b    ;# 0
 ```
 
 ## Modifying
