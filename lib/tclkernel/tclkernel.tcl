@@ -17,12 +17,18 @@ namespace eval tclkernel {
     zmq ctx_set $context -io_threads 2
 
     variable version [info patchlevel]
-    variable kernel_info [json new status ok protocol_version 5.4 \
-        implementation tcljupyter implementation_version $modver]
-    json nest kernel_info language_info [json new name Tcl version $version \
-        mimetype txt/x-tcl file_extension .tcl]
-    json set kernel_info banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
-        $version $modver 5.4]
+    variable kernel_info [sqljson object \
+        status [sqljson str ok] \
+        protocol_version [sqljson str 5.4] \
+        implementation [sqljson str tcljupyter] \
+        implementation_version [sqljson str $modver] \
+        language_info [sqljson object \
+            name [sqljson str Tcl] \
+            version [sqljson str $version] \
+            mimetype [sqljson str txt/x-tcl] \
+            file_extension [sqljson str .tcl]] \
+        banner [sqljson str [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
+            $version $modver 5.4]]]
 
     proc connect {connection_file} {
         logging::debug {format "kernel_info: %s" $::tclkernel::kernel_info}
@@ -33,7 +39,7 @@ namespace eval tclkernel {
         set f [open $connection_file]
         set conn [read $f]
         close $f
-        set key [json get $conn key]
+        set key [sqljson get $conn key]
         interp alias {} hmac {} sha2::hmac -hex -key $key
 
         starthb
@@ -49,7 +55,7 @@ namespace eval tclkernel {
 
     proc address {port} {
         variable conn
-        return [json get $conn transport]://[json get $conn ip]:[json get $conn ${port}_port]
+        return [sqljson get $conn transport]://[sqljson get $conn ip]:[sqljson get $conn ${port}_port]
     }
 
     proc starthb {} {
@@ -78,7 +84,7 @@ namespace eval tclkernel {
         set subscription [zmq recv $ports(iopub)]
         binary scan $subscription c subscribed
         if {$subscribed == 1} {
-            respond [jmsg::status [json new] idle]
+            respond [jmsg::status {{}} idle]
         }
     }
 
@@ -100,7 +106,7 @@ namespace eval tclkernel {
         variable kernel_id
         set port [dict get $jmsg port]
         dict with jmsg {
-            json set header session $kernel_id
+            set header [jmsg::setsession $header $kernel_id]
             set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]]
         }
 
@@ -131,10 +137,10 @@ namespace eval tclkernel {
                 handle_info_request $jmsg
             }
             comm_info_request {
-                handle_empty_reply $jmsg comm_info_reply comms [json new]
+                handle_empty_reply $jmsg comm_info_reply comms {{}}
             }
             history_request {
-                handle_empty_reply $jmsg history_reply history [json arr]
+                handle_empty_reply $jmsg history_reply history [sqljson array]
             }
             default {
                 if {$port eq "control"} {
@@ -149,9 +155,7 @@ namespace eval tclkernel {
     }
 
     proc handle_empty_reply {jmsg reply_type content_key content_value} {
-        set content [json new]
-        json nest content $content_key $content_value
-        respond [jmsg::reply $jmsg $reply_type $content]
+        respond [jmsg::reply $jmsg $reply_type [sqljson object $content_key $content_value]]
     }
 
     proc handle_info_request {jmsg} {

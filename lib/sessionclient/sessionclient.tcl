@@ -1,6 +1,6 @@
 package provide sessionclient 0.0.1
 package require jmsg
-package require jlib
+package require sqljson
 package require logging
 
 namespace eval sessionclient {
@@ -31,36 +31,28 @@ namespace eval sessionclient {
     proc stream {name text} {
         variable ph
         set response [jmsg::newiopub $ph stream]
-        dict set response content [json new name $name text [json str $text]]
+        dict set response content [sqljson object name [sqljson str $name] text [sqljson str $text]]
         respond $response
     }
 
     proc display_data {mimetype body id} {
         if {$mimetype ne "application/json"} {
-            set content [json new] 
-            json nest content data [json new $mimetype [json str $body]]
-            json nest content metadata [json new]
-            json nest content transient [json new display_id $id]
-
+            set data [sqljson object $mimetype [sqljson str $body]]
         } else {
-            set data [json new text/plain [json str $body]]
-            json nest data $mimetype [json str $body]
-            set content [json new]
-            json nest content data $data
-            json set content metadata [json new]
-            json nest content transient [json new display_id $id]
+            # JSON bodies are embedded as JSON, with a text/plain fallback
+            set data [sqljson object text/plain [sqljson str $body] $mimetype $body]
         }
-        return $content
-
+        return [sqljson object \
+            data $data \
+            metadata {{}} \
+            transient [sqljson object display_id [sqljson str $id]]]
     }
 
     proc execute_result {n result {mimetype "text/plain"}} {
-        set data [json new $mimetype [json str $result]]
-
-        set result [json new execution_count $n]
-        json nest result data $data
-        json nest result metadata [json new]
-        return $result
+        return [sqljson object \
+            execution_count [sqljson num $n] \
+            data [sqljson object $mimetype [sqljson str $result]] \
+            metadata {{}}]
     }
 
     proc display {mimetype body} {
@@ -89,8 +81,10 @@ namespace eval sessionclient {
         variable exec_counter
         set ph [dict get $jmsg header]
         puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
-        set content [json new status ok execution_count $exec_counter]
-        json nest content user_expressions [json new]
+        set content [sqljson object \
+            status [sqljson str ok] \
+            execution_count [sqljson num $exec_counter] \
+            user_expressions {{}}]
         respond [jmsg::reply $jmsg execute_reply $content]
         respond [jmsg::status $ph idle]
     }
@@ -100,19 +94,21 @@ namespace eval sessionclient {
         set ph [dict get $jmsg header]
         respond [jmsg::status $ph busy]
 
-        set cursor_pos [json get [dict get $jmsg content] cursor_pos]
-        set code [json get [dict get $jmsg content] code]
+        set cursor_pos [sqljson get [dict get $jmsg content] cursor_pos]
+        set code [sqljson get [dict get $jmsg content] code]
         set cursor_start $cursor_pos
         set cursor_end $cursor_pos
 
         if {[catch {lassign [child eval [list ::jupyter::complete $code $cursor_pos]] matches cursor_start} err]} {
-            set matches [json array [list string $err]]
-
-        } else {
-            set matches [lmap x $matches {list string $x}]
-            set matches [json array {*}$matches]
+            logging::debug {format "completion failed: %s" $err}
+            set matches {}
+            set cursor_start $cursor_pos
         }
-        set content [json template new status ok matches $matches cursor_start $cursor_start cursor_end $cursor_end]
+        set content [sqljson object \
+            status [sqljson str ok] \
+            matches [sqljson array {*}[lmap x $matches {sqljson str $x}]] \
+            cursor_start [sqljson num $cursor_start] \
+            cursor_end [sqljson num $cursor_end]]
         respond [jmsg::reply $jmsg complete_reply $content]
         respond [jmsg::status $ph idle]
     }
@@ -125,7 +121,7 @@ namespace eval sessionclient {
         set ph [dict get $jmsg header]
         respond [jmsg::status $ph busy]
 
-        set code [json get [dict get $jmsg content] code]
+        set code [sqljson get [dict get $jmsg content] code]
         append code \n
         if {[info complete $code]} {
             set status "complete"
@@ -145,9 +141,11 @@ namespace eval sessionclient {
         }
         # TODO: add indent hint for status "incomplete"
         if {$status eq "incomplete"} {
-            set content [json new status $status indent [string repeat "  " $indent_level]]
+            set content [sqljson object \
+                status [sqljson str $status] \
+                indent [sqljson str [string repeat "  " $indent_level]]]
         } else {
-            set content [json new status $status]
+            set content [sqljson object status [sqljson str $status]]
         }
         respond [jmsg::reply $jmsg is_complete_reply $content]
         respond [jmsg::status $ph idle]
@@ -205,15 +203,15 @@ namespace eval sessionclient {
         variable allow_stdin
         variable exec_counter
         set ident [dict get $jmsg uuid]
-        set allow_stdin [expr {[json get [dict get $jmsg content] allow_stdin] ne "0"}]
+        set allow_stdin [expr {[sqljson get [dict get $jmsg content] allow_stdin] ne "0"}]
         incr exec_counter
         set ph [dict get $jmsg header]
 
         respond [jmsg::status $ph busy]
 
-        set code [json get [dict get $jmsg content] code]
+        set code [sqljson get [dict get $jmsg content] code]
         set response [jmsg::newiopub $ph execute_input]
-        dict set response content [json new code [json str $code] execution_count $exec_counter]
+        dict set response content [sqljson object code [sqljson str $code] execution_count [sqljson num $exec_counter]]
         respond $response
 
         lassign [parse_magics $code] code magics error
@@ -225,24 +223,26 @@ namespace eval sessionclient {
             child eval [list jupyter::html "<code style='color:green;'>$time_result</code>"]
         }
 
-        set rcontent [json new]
         if {$failed} {
             set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
             puts stderr $emsg
-            json set rcontent ename "Tcl error"
-            json set rcontent evalue [json str $result]
-            json set rcontent traceback [json arr [list "string" $emsg]]
-            json set rcontent status error
+            set rcontent [sqljson object \
+                ename [sqljson str "Tcl error"] \
+                evalue [sqljson str $result] \
+                traceback [sqljson array [sqljson str $emsg]] \
+                status [sqljson str error] \
+                execution_count [sqljson num $exec_counter]]
         } else {
             if {$result ne {} && ![dict get $magics noresult]} {
                 set response [jmsg::newiopub $ph execute_result]
                 dict set response content [execute_result $exec_counter $result]
                 respond $response
             }
-            json set rcontent status ok
-            json nest rcontent user_expressions [json new]
+            set rcontent [sqljson object \
+                status [sqljson str ok] \
+                user_expressions {{}} \
+                execution_count [sqljson num $exec_counter]]
         }
-        json set rcontent execution_count $exec_counter
 
         respond [jmsg::reply $jmsg execute_reply $rcontent]
         respond [jmsg::status $ph idle]
@@ -263,8 +263,7 @@ namespace eval sessionclient {
         if {!$allow_stdin} {
             error "stdin is not supported in this context"
         }
-        set content [json new prompt {}]
-        json nest content password false
+        set content [sqljson object prompt [sqljson str {}] password [sqljson bool 0]]
         set request [jmsg::newiopub $ph input_request]
         dict set request port stdin
         dict set request uuid $ident
@@ -278,7 +277,7 @@ namespace eval sessionclient {
 
     proc input_reply {jmsg} {
         variable input_value
-        set input_value [json get [dict get $jmsg content] value]
+        set input_value [sqljson get [dict get $jmsg content] value]
     }
 
     # Prepare the worker thread: redirect output and create the user interpreter

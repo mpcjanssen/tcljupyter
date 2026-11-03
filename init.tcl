@@ -9,8 +9,7 @@ if {[llength $argv] == 0} {
   puts [package require Thread]
   puts [package require sqlite3]
   puts [package require zmq]
-  set js [json new a b]
-  puts [json nest js user [json arr]]
+  puts [sqljson object a [sqljson str b] user [sqljson array]]
   exit 0
 }
 lassign $argv connection_file
