@@ -23,7 +23,16 @@ namespace eval tclkernel {
     json set kernel_info banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
         $version $modver 5.4]
 
+    # Write a trace line to stderr when TCLJUPYTER_DEBUG is set
+    proc debug {text} {
+        if {[info exists ::env(TCLJUPYTER_DEBUG)]} {
+            puts stderr $text
+        }
+    }
+
     proc connect {connection_file} {
+        debug "kernel_info: $::tclkernel::kernel_info"
+
         variable conn
         variable ports
         variable context
@@ -102,6 +111,7 @@ namespace eval tclkernel {
         }
 
         set zmsg [jmsg::znew $jmsg]
+        debug "$port [string repeat > 20]\nRESPOND:\n[string range [join $zmsg \n] 0 1200]"
         set frames [lmap frame [lrange $zmsg 3 end] {encoding convertto utf-8 $frame}]
         set zmsg [lreplace $zmsg 3 end {*}$frames]
         zmq send_multipart $ports($port) $zmsg
@@ -119,6 +129,7 @@ namespace eval tclkernel {
             return
         }
         set zmsg [zmq recv_multipart $ports($port)]
+        debug "$port [string repeat < 20]\nREQ:\n[string range [join $zmsg \n] 0 1200]"
         set jmsg [jmsg::new [list $port {*}$zmsg]]
 
         switch -exact [jmsg::type $jmsg] {
