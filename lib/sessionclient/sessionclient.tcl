@@ -42,17 +42,20 @@ namespace eval sessionclient {
             # JSON bodies are embedded as JSON, with a text/plain fallback
             set data [sqljson object text/plain [sqljson str $body] $mimetype $body]
         }
-        return [sqljson object \
-            data $data \
-            metadata {{}} \
-            transient [sqljson object display_id [sqljson str $id]]]
+        return [sqljson template {{
+            "data": {{~json:data}},
+            "metadata": {},
+            "transient": {"display_id": {{~str:id}}}
+        }}]
     }
 
     proc execute_result {n result {mimetype "text/plain"}} {
-        return [sqljson object \
-            execution_count [sqljson num $n] \
-            data [sqljson object $mimetype [sqljson str $result]] \
-            metadata {{}}]
+        set data [sqljson object $mimetype [sqljson str $result]]
+        return [sqljson template {{
+            "execution_count": {{~num:n}},
+            "data": {{~json:data}},
+            "metadata": {}
+        }}]
     }
 
     proc display {mimetype body} {
@@ -81,10 +84,11 @@ namespace eval sessionclient {
         variable exec_counter
         set ph [dict get $jmsg header]
         puts stderr [join [lrange [split $::errorInfo \n] 0 2] \n]
-        set content [sqljson object \
-            status [sqljson str ok] \
-            execution_count [sqljson num $exec_counter] \
-            user_expressions {{}}]
+        set content [sqljson template {{
+            "status": "ok",
+            "execution_count": {{~num:exec_counter}},
+            "user_expressions": {}
+        }}]
         respond [jmsg::reply $jmsg execute_reply $content]
         respond [jmsg::status $ph idle]
     }
@@ -104,11 +108,13 @@ namespace eval sessionclient {
             set matches {}
             set cursor_start $cursor_pos
         }
-        set content [sqljson object \
-            status [sqljson str ok] \
-            matches [sqljson array {*}[lmap x $matches {sqljson str $x}]] \
-            cursor_start [sqljson num $cursor_start] \
-            cursor_end [sqljson num $cursor_end]]
+        set matches [lmap x $matches {sqljson str $x}]
+        set content [sqljson template {{
+            "status": "ok",
+            "matches": {{~array:matches}},
+            "cursor_start": {{~num:cursor_start}},
+            "cursor_end": {{~num:cursor_end}}
+        }}]
         respond [jmsg::reply $jmsg complete_reply $content]
         respond [jmsg::status $ph idle]
     }
@@ -141,11 +147,13 @@ namespace eval sessionclient {
         }
         # TODO: add indent hint for status "incomplete"
         if {$status eq "incomplete"} {
-            set content [sqljson object \
-                status [sqljson str $status] \
-                indent [sqljson str [string repeat "  " $indent_level]]]
+            set indent [string repeat "  " $indent_level]
+            set content [sqljson template {{
+                "status": {{~str:status}},
+                "indent": {{~str:indent}}
+            }}]
         } else {
-            set content [sqljson object status [sqljson str $status]]
+            set content [sqljson template {{"status": {{~str:status}}}}]
         }
         respond [jmsg::reply $jmsg is_complete_reply $content]
         respond [jmsg::status $ph idle]
@@ -226,22 +234,25 @@ namespace eval sessionclient {
         if {$failed} {
             set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
             puts stderr $emsg
-            set rcontent [sqljson object \
-                ename [sqljson str "Tcl error"] \
-                evalue [sqljson str $result] \
-                traceback [sqljson array [sqljson str $emsg]] \
-                status [sqljson str error] \
-                execution_count [sqljson num $exec_counter]]
+            set traceback [list [sqljson str $emsg]]
+            set rcontent [sqljson template {{
+                "ename": "Tcl error",
+                "evalue": {{~str:result}},
+                "traceback": {{~array:traceback}},
+                "status": "error",
+                "execution_count": {{~num:exec_counter}}
+            }}]
         } else {
             if {$result ne {} && ![dict get $magics noresult]} {
                 set response [jmsg::newiopub $ph execute_result]
                 dict set response content [execute_result $exec_counter $result]
                 respond $response
             }
-            set rcontent [sqljson object \
-                status [sqljson str ok] \
-                user_expressions {{}} \
-                execution_count [sqljson num $exec_counter]]
+            set rcontent [sqljson template {{
+                "status": "ok",
+                "user_expressions": {},
+                "execution_count": {{~num:exec_counter}}
+            }}]
         }
 
         respond [jmsg::reply $jmsg execute_reply $rcontent]

@@ -7,12 +7,13 @@ namespace eval jmsg {
     proc newheader {username msg_type} {
         set msg_id [newid]
         set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
-        return [sqljson object \
-            msg_id [sqljson str $msg_id] \
-            msg_type [sqljson str $msg_type] \
-            username [sqljson str $username] \
-            date [sqljson str $date] \
-            version [sqljson str 5.4]]
+        return [sqljson template {{
+            "msg_id": {{~str:msg_id}},
+            "msg_type": {{~str:msg_type}},
+            "username": {{~str:username}},
+            "date": {{~str:date}},
+            "version": "5.4"
+        }}]
     }
 
 proc newid {} {

@@ -17,18 +17,21 @@ namespace eval tclkernel {
     zmq ctx_set $context -io_threads 2
 
     variable version [info patchlevel]
-    variable kernel_info [sqljson object \
-        status [sqljson str ok] \
-        protocol_version [sqljson str 5.4] \
-        implementation [sqljson str tcljupyter] \
-        implementation_version [sqljson str $modver] \
-        language_info [sqljson object \
-            name [sqljson str Tcl] \
-            version [sqljson str $version] \
-            mimetype [sqljson str txt/x-tcl] \
-            file_extension [sqljson str .tcl]] \
-        banner [sqljson str [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
-            $version $modver 5.4]]]
+    variable banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
+        $version $modver 5.4]
+    variable kernel_info [sqljson template {{
+        "status": "ok",
+        "protocol_version": "5.4",
+        "implementation": "tcljupyter",
+        "implementation_version": {{~str:modver}},
+        "language_info": {
+            "name": "Tcl",
+            "version": {{~str:version}},
+            "mimetype": "txt/x-tcl",
+            "file_extension": ".tcl"
+        },
+        "banner": {{~str:banner}}
+    }}]
 
     proc connect {connection_file} {
         logging::debug {format "kernel_info: %s" $::tclkernel::kernel_info}

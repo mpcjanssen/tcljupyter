@@ -1,7 +1,7 @@
 package require sqlite3
 
 namespace eval ::sqljson {
-    namespace export decode get jset str num bool null object array
+    namespace export decode get jset template str num bool null object array
     namespace ensemble create
     sqlite3 [namespace current]::db :memory:
 }
@@ -105,6 +105,48 @@ proc ::sqljson::object {args} {
 
 proc ::sqljson::array {args} {
     Validate "\[[join $args ,]\]"
+}
+
+# Replace every {{~type:varname}} in text with the JSON encoding of the caller's
+# variable varname and return the validated, minified result. Types:
+#   str, num, bool  the value as a JSON string, number or boolean
+#   null            JSON null; no variable is needed ({{~null}})
+#   object          a dict whose values are JSON text
+#   array           a list whose elements are JSON text
+#   json            the value, which is already JSON text
+proc ::sqljson::template {text} {
+    set result ""
+    set pos 0
+    while {[regexp -indices -start $pos {\{\{~(\w+)(?::([^{}]+))?\}\}} $text match type name]} {
+        lassign $match from to
+        set type [string range $text {*}$type]
+        if {$type eq "null"} {
+            set value null
+        } else {
+            if {$name eq "" || [lindex $name 0] < 0} {
+                return -code error -errorcode {SQLJSON TEMPLATE} \
+                    "template type \"$type\" needs a variable name"
+            }
+            set name [string range $text {*}$name]
+            set value [uplevel 1 [list ::set $name]]
+            switch -- $type {
+                str    { set value [str $value] }
+                num    { set value [num $value] }
+                bool   { set value [bool $value] }
+                object { set value [object {*}$value] }
+                array  { set value [array {*}$value] }
+                json   { }
+                default {
+                    return -code error -errorcode {SQLJSON TEMPLATE} \
+                        "unknown template type \"$type\" for variable \"$name\""
+                }
+            }
+        }
+        append result [string range $text $pos $from-1] $value
+        set pos [expr {$to + 1}]
+    }
+    append result [string range $text $pos end]
+    Validate $result
 }
 
 proc ::sqljson::Validate {text} {
