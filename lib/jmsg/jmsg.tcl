@@ -68,13 +68,6 @@ proc newiopub {parent msg_type} {
     return $jmsg 
 }
 
-# Return a header with its session field set
-proc setsession {header session} {
-    set fields [sqljson decode $header]
-    dict set fields session $session
-    return [sqljson object {*}[concat {*}[lmap {k v} $fields {list $k [sqljson str $v]}]]]
-}
-
 # Build a reply to jmsg with a fresh header of the given type
 proc reply {jmsg msg_type content} {
     set parent [dict get $jmsg header]

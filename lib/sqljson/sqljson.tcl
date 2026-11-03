@@ -1,7 +1,7 @@
 package require sqlite3
 
 namespace eval ::sqljson {
-    namespace export decode get str num bool null object array
+    namespace export decode get jset str num bool null object array
     namespace ensemble create
     sqlite3 [namespace current]::db :memory:
 }
@@ -41,16 +41,34 @@ proc ::sqljson::Convert {value type} {
     }
 }
 
-# Extract a value by path (e.g. items[0].name or [2]); the leading "$" of the
-# SQLite JSON path is implicit and an empty path is the whole document.
-# Nested values stay JSON text.
-proc ::sqljson::get {json path} {
+# Turn a path such as items[0].name or [2] into a SQLite JSON path; the leading
+# "$" is implicit and an empty path is the whole document.
+proc ::sqljson::Path {path} {
     if {$path eq "" || [string index $path 0] eq "\["} {
-        set path \$$path
-    } else {
-        set path \$.$path
+        return \$$path
     }
+    return \$.$path
+}
+
+# Extract a value by path (e.g. items[0].name or [2]); nested values stay JSON text.
+proc ::sqljson::get {json path} {
+    set path [Path $path]
     db onecolumn {SELECT json_extract(CAST(:json AS TEXT), :path)}
+}
+
+# Set the value at path in the JSON text held in varname, creating or
+# replacing it. The value must already be JSON (use str/num/bool/null/object/array).
+# Returns the new JSON text.
+proc ::sqljson::jset {varname path value} {
+    upvar 1 $varname json
+    if {![info exists json] || [string trim $json] eq ""} {
+        set json {{}}
+    }
+    set path [Path $path]
+    if {![db onecolumn {SELECT json_valid(:value)}]} {
+        return -code error -errorcode {SQLJSON INVALID} "invalid JSON: $value"
+    }
+    set json [db onecolumn {SELECT json_set(CAST(:json AS TEXT), :path, json(:value))}]
 }
 
 proc ::sqljson::str {s} {

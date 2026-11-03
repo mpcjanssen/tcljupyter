@@ -106,7 +106,7 @@ namespace eval tclkernel {
         variable kernel_id
         set port [dict get $jmsg port]
         dict with jmsg {
-            set header [jmsg::setsession $header $kernel_id]
+            sqljson jset header session [sqljson str $kernel_id]
             set hmac [hmac [encoding convertto utf-8 "$header$parent$metadata$content"]]
         }
 
