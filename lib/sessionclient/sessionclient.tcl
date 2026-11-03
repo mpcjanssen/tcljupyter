@@ -1,6 +1,7 @@
 package provide sessionclient 0.0.1
 package require jmsg
 package require jlib
+package require logging
 
 namespace eval sessionclient {
     # Header of the request being handled; used to parent iopub messages
@@ -248,6 +249,7 @@ namespace eval sessionclient {
     proc init {master_id} {
         variable master
         set master $master_id
+        logging::forward_to $master_id
         chan push stdout {::sessionclient::writechan stdout}
         chan push stderr {::sessionclient::writechan stderr}
         interp create child
