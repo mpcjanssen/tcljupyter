@@ -57,6 +57,25 @@ class TclJupyterTests(jkt.KernelTests):
         execution_count_2 = reply2['content']['execution_count']
         self.assertEqual(execution_count_1 + 1, execution_count_2)
 
+    def test_gets_stdin(self):
+        """gets stdin asks the frontend for input"""
+        self.flush_channels()
+        msg_id = self.kc.execute('gets stdin line; set line', allow_stdin=True)
+        request = self.kc.get_stdin_msg(timeout=5)
+        self.assertEqual(request['msg_type'], 'input_request')
+        self.kc.input('hello world')
+        reply = self.kc.get_shell_msg(timeout=5)
+        self.assertEqual(reply['content']['status'], 'ok')
+        results = []
+        while True:
+            msg = self.kc.get_iopub_msg(timeout=5)
+            if msg['msg_type'] == 'execute_result':
+                results.append(msg['content']['data']['text/plain'])
+            if msg['msg_type'] == 'status' and msg['content']['execution_state'] == 'idle' \
+                    and msg['parent_header'].get('msg_id') == msg_id:
+                break
+        self.assertEqual(results, ['hello world'])
+
     def test_heartbeat(self):
         self.assertTrue(self.kc.hb_channel.is_beating())
 

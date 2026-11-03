@@ -11,6 +11,10 @@ namespace eval sessionclient {
     variable display_id 0
     variable indent_level 0
     variable lastPos 0
+    # Client identity and stdin permission of the running execute_request
+    variable ident {}
+    variable allow_stdin 0
+    variable input_value {}
 
     proc writechan {name cmd args} {
         switch -exact $cmd {
@@ -197,7 +201,11 @@ namespace eval sessionclient {
 
     proc execute_request {jmsg} {
         variable ph
+        variable ident
+        variable allow_stdin
         variable exec_counter
+        set ident [dict get $jmsg uuid]
+        set allow_stdin [expr {[json get [dict get $jmsg content] allow_stdin] ne "0"}]
         incr exec_counter
         set ph [dict get $jmsg header]
 
@@ -245,6 +253,34 @@ namespace eval sessionclient {
         thread::send -async $master [list ::tclkernel::respond $jmsg]
     }
 
+    # Ask the frontend for a line of input and wait for the reply.
+    # vwait keeps the event loop running so input_reply can be delivered.
+    proc input_line {} {
+        variable ph
+        variable ident
+        variable allow_stdin
+        variable input_value
+        if {!$allow_stdin} {
+            error "stdin is not supported in this context"
+        }
+        set content [json new prompt {}]
+        json nest content password false
+        set request [jmsg::newiopub $ph input_request]
+        dict set request port stdin
+        dict set request uuid $ident
+        dict set request content $content
+        set input_value {}
+        unset input_value
+        respond $request
+        vwait ::sessionclient::input_value
+        return $input_value
+    }
+
+    proc input_reply {jmsg} {
+        variable input_value
+        set input_value [json get [dict get $jmsg content] value]
+    }
+
     # Prepare the worker thread: redirect output and create the user interpreter
     proc init {master_id} {
         variable master
@@ -255,8 +291,22 @@ namespace eval sessionclient {
         interp create child
         interp alias child ::jupyter::display {} ::sessionclient::display
         interp alias child ::jupyter::updatedisplay {} ::sessionclient::updatedisplay
+        interp alias child ::jupyter::input {} ::sessionclient::input_line
         interp alias child ::jupyter::complete child ::jupyter::defaultcomplete
         child eval {
+            # Reading stdin goes through the frontend's input prompt
+            rename gets ::jupyter::realgets
+            proc gets {chan args} {
+                if {$chan ne "stdin"} {
+                    return [uplevel 1 [list ::jupyter::realgets $chan {*}$args]]
+                }
+                set line [::jupyter::input]
+                if {[llength $args] == 0} {
+                    return $line
+                }
+                uplevel 1 [list set [lindex $args 0] $line]
+                return [string length $line]
+            }
             namespace eval jupyter {
                 proc defaultcomplete {code pos} {
                     return [list {} $pos]
