@@ -4,12 +4,19 @@ package require logging
 
 namespace eval json {
 
-    namespace ensemble create -map [list get get set jset new new nest nest arr arr]
+    namespace ensemble create -map [list get get set jset new new nest nest arr arr str str]
     sqlite3 db
     proc get {str key} {
         set path "\$.$key"
         lassign [db eval {select json_extract($str, $path)}] val
         return $val
+    }
+
+    # Return value as a pure string. Values that hold an integer or double
+    # are otherwise bound as JSON numbers, which text fields cannot accept.
+    proc str {value} {
+        lassign [db eval {select cast($value as text)}] text
+        return $text
     }
 
     proc new {args} {

@@ -21,7 +21,7 @@ class TclJupyterTests(jkt.KernelTests):
     # Samples of code which generate a result value (ie, some text
     # displayed as Out[n])
     code_execute_result = [
-        {'code': 'expr {6 * 7}', 'result': 42}
+        {'code': 'expr {6 * 7}', 'result': '42'}
     ]
 
     # Tests on is_complete_* interactions between frontend and kernel
@@ -75,6 +75,11 @@ class TclJupyterTests(jkt.KernelTests):
                     and msg['parent_header'].get('msg_id') == msg_id:
                 break
         self.assertEqual(results, ['hello world'])
+
+    def test_numeric_result_is_string(self):
+        """results that are numbers are sent as strings"""
+        reply, output_msgs = self._execute_code('expr {1+1}')
+        self.assertEqual(output_msgs[0]['content']['data']['text/plain'], '2')
 
     def test_heartbeat(self):
         self.assertTrue(self.kc.hb_channel.is_beating())

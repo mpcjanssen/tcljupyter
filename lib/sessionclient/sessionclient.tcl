@@ -31,20 +31,20 @@ namespace eval sessionclient {
     proc stream {name text} {
         variable ph
         set response [jmsg::newiopub $ph stream]
-        dict set response content [json new name $name text $text]
+        dict set response content [json new name $name text [json str $text]]
         respond $response
     }
 
     proc display_data {mimetype body id} {
         if {$mimetype ne "application/json"} {
             set content [json new] 
-            json nest content data [json new $mimetype $body]
+            json nest content data [json new $mimetype [json str $body]]
             json nest content metadata [json new]
             json nest content transient [json new display_id $id]
 
         } else {
-            set data [json new text/plain $body]
-            json nest data $mimetype $body
+            set data [json new text/plain [json str $body]]
+            json nest data $mimetype [json str $body]
             set content [json new]
             json nest content data $data
             json set content metadata [json new]
@@ -55,7 +55,7 @@ namespace eval sessionclient {
     }
 
     proc execute_result {n result {mimetype "text/plain"}} {
-        set data [json new $mimetype $result]
+        set data [json new $mimetype [json str $result]]
 
         set result [json new execution_count $n]
         json nest result data $data
@@ -213,7 +213,7 @@ namespace eval sessionclient {
 
         set code [json get [dict get $jmsg content] code]
         set response [jmsg::newiopub $ph execute_input]
-        dict set response content [json new code $code execution_count $exec_counter]
+        dict set response content [json new code [json str $code] execution_count $exec_counter]
         respond $response
 
         lassign [parse_magics $code] code magics error
@@ -230,7 +230,7 @@ namespace eval sessionclient {
             set emsg [join [lrange [split $::errorInfo \n] 0 end-2] \n]
             puts stderr $emsg
             json set rcontent ename "Tcl error"
-            json set rcontent evalue $result
+            json set rcontent evalue [json str $result]
             json set rcontent traceback [json arr [list "string" $emsg]]
             json set rcontent status error
         } else {
