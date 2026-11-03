@@ -2,6 +2,7 @@ package provide tclkernel 0.9.0
 package require zmq
 package require Thread
 package require jmsg
+package require logging
 
 namespace eval tclkernel {
     variable modver [package provide tclkernel]
@@ -23,15 +24,8 @@ namespace eval tclkernel {
     json set kernel_info banner [format "Tcl %s :: TclJupyter kernel %s \nProtocol v%s" \
         $version $modver 5.4]
 
-    # Write a trace line to stderr; a no-op unless TCLJUPYTER_DEBUG is set
-    if {[info exists ::env(TCLJUPYTER_DEBUG)]} {
-        proc debug {text} {puts stderr $text}
-    } else {
-        proc debug {text} {}
-    }
-
     proc connect {connection_file} {
-        debug "kernel_info: $::tclkernel::kernel_info"
+        logging::debug {format "kernel_info: %s" $::tclkernel::kernel_info}
 
         variable conn
         variable ports
@@ -92,7 +86,7 @@ namespace eval tclkernel {
     proc start {pid} {
         variable worker
         set worker [thread::create]
-        puts "Created thread $worker for $pid"
+        logging::log {format "Created thread %s for %s" $worker $pid}
         thread::send $worker [list set auto_path $::auto_path]
         thread::send $worker [list tcl::tm::path add {*}[tcl::tm::path list]]
         thread::send $worker [list apply {{master} {
@@ -111,7 +105,7 @@ namespace eval tclkernel {
         }
 
         set zmsg [jmsg::znew $jmsg]
-        debug "$port [string repeat > 20]\nRESPOND:\n[string range [join $zmsg \n] 0 1200]"
+        logging::debug {format "%s %s\nRESPOND:\n%s" $port [string repeat > 20] [string range [join $zmsg \n] 0 1200]}
         set frames [lmap frame [lrange $zmsg 3 end] {encoding convertto utf-8 $frame}]
         set zmsg [lreplace $zmsg 3 end {*}$frames]
         zmq send_multipart $ports($port) $zmsg
@@ -129,7 +123,7 @@ namespace eval tclkernel {
             return
         }
         set zmsg [zmq recv_multipart $ports($port)]
-        debug "$port [string repeat < 20]\nREQ:\n[string range [join $zmsg \n] 0 1200]"
+        logging::debug {format "%s %s\nREQ:\n%s" $port [string repeat < 20] [string range [join $zmsg \n] 0 1200]}
         set jmsg [jmsg::new [list $port {*}$zmsg]]
 
         switch -exact [jmsg::type $jmsg] {
@@ -173,11 +167,11 @@ namespace eval tclkernel {
         switch -exact [jmsg::type $jmsg] {
             shutdown_request {
                 respond [jmsg::reply $jmsg shutdown_reply [dict get $jmsg content]]
-                puts "Shutting down kernel [pid]"
+                logging::log {format "Shutting down kernel %s" [pid]}
                 after 0 exit
             }
             interrupt_request {
-                puts "Interrupting kernel [pid]"
+                logging::log {format "Interrupting kernel %s" [pid]}
                 thread::cancel $worker
                 respond [jmsg::reply $jmsg interrupt_reply [dict get $jmsg content]]
             }
