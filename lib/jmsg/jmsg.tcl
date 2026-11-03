@@ -64,6 +64,15 @@ proc newiopub {parent msg_type} {
     return $jmsg 
 }
 
+# Build a reply to jmsg with a fresh header of the given type
+proc reply {jmsg msg_type content} {
+    set parent [dict get $jmsg header]
+    dict set jmsg parent $parent
+    dict set jmsg header [newheader [json get $parent username] $msg_type]
+    dict set jmsg content $content
+    return $jmsg
+}
+
 proc status {parent state} {
     set jmsg [newiopub $parent status]
     dict set jmsg  content [json new execution_state $state] 

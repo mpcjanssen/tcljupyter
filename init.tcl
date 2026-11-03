@@ -15,7 +15,7 @@ if {[llength $argv] == 0} {
 }
 lassign $argv connection_file
 puts ">>>>>>>>>>>>>>>>>>>>>>>>> Kernel started, pid: [pid] <<<<<<<<<<<<<<<<<<<<<<<<<"
-connect $connection_file
+tclkernel::connect $connection_file
 
 vwait forever
 
