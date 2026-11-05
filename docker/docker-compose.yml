@@ -1,6 +1,6 @@
 services:
   tcljupyter:
-    container_name: tcljupyter
+    container_name: tcljupyter-local
     image: mpcjanssen/tcljupyter:x86_64
     environment:
       - TCLLIBPATH=/home/tcljupyter/tcl/lib

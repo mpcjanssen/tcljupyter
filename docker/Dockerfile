@@ -42,9 +42,7 @@ RUN \
 
 
 # Install tcljupyter
-RUN git clone https://github.com/mpcjanssen/tcljupyter &&\
-cd tcljupyter && \
-VENV=${VENV} make install-docker
+RUN git clone https://github.com/mpcjanssen/tcljupyter 
 
 # Expose Jupyter port and start Jupyter
 EXPOSE ${PORT}
