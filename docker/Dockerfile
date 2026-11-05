@@ -23,11 +23,10 @@ RUN \
     apk update &&\
     apk add --no-cache autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil alpine-sdk cmake
 
-RUN python3 -m venv ${VENV}
 RUN \
     --mount=type=cache,target=/root/.cache \
-    ${VENV}/bin/pip install jupyterlab jupyterlab-git &&\
-    ${VENV}/bin/pip cache purge
+    uv install jupyterlab jupyterlab-git &&\
+
 
 # Install tcl9
 RUN mkdir /src
