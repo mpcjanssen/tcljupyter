@@ -8,6 +8,7 @@ ENV NOTEBOOKS=/home/tcljupyter/notebooks
 ENV CONFIG=/home/tcljupyter/config
 ENV PORT=8888
 ENV TCLLIBPATH=/home/tcljupyter/tcl/lib
+ENV VENV=/venv
 
 RUN addgroup ${UGID}
 RUN adduser -D \
@@ -22,9 +23,6 @@ RUN \
     apk update &&\
     apk add --no-cache autoconf bash curl openssh python3 git wget zeromq-dev bsd-compat-headers gcc make python3-dev util-linux-dev musl-dev libffi-dev tar curl-dev fossil alpine-sdk cmake
 
-RUN \
-    --mount=type=cache,target=/root/.cache \
-    pip install jupyterlab jupyterlab-git &&\
 
 
 # Install tcl9
@@ -35,26 +33,13 @@ cd tcl9/unix &&\
 ./configure --prefix=/usr &&\
 make && make install
 
-# Install tcllib
-RUN wget -q https://core.tcl-lang.org/tcllib/uv/tcllib-2.0.tar.gz -O - | tar zvx --one-top-level=tcllib --strip-components 1 &&\
-cd ./tcllib &&\
-ls &&\
-./configure --prefix=/usr &&\
-make && make install 
-
-
-## Install tclcurl
-#
-#RUN fossil clone https://fossil.mpcjanssen.nl/tclcurl --user=root &&\
-#cd tclcurl &&\
-#touch rebuild2 &&\
-#./configure --prefix=/usr &&\
-#make && make install
-
-# Install tcl libs
+RUN python3 -m venv ${VENV}
 RUN \
-    apk update &&\
-    apk add --no-cache tcl-tls
+    --mount=type=cache,target=/root/.cache \
+    ${VENV}/bin/pip install jupyterlab jupyterlab-git &&\
+    ${VENV}/bin/pip cache purge
+
+
 
 # Install tcljupyter
 RUN git clone https://github.com/mpcjanssen/tcljupyter &&\
