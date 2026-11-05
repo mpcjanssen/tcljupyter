@@ -1,9 +1,10 @@
 package provide jmsg 0.0.1
 package require sha256
-package require uuid
 package require sqljson
 
 namespace eval jmsg {
+    variable message_id_counter 0
+
     proc newheader {username msg_type} {
         set msg_id [newid]
         set date [clock format [clock seconds] -gmt 1 -format "%Y-%m-%dT%H:%M:%SZ"]
@@ -17,7 +18,8 @@ namespace eval jmsg {
     }
 
 proc newid {} {
-    return [string map {- {}} [uuid::uuid generate]]   
+    variable message_id_counter
+    return "[pid]-[clock clicks]-[incr message_id_counter]"
 }
 
 proc new {zmsg} {

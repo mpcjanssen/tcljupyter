@@ -25,9 +25,10 @@ The Tcl interpreter used to run `init.tcl` must be Tcl 8.6 or newer and provide:
 
 - The Tcl Thread extension (`Thread`).
 - The Tcl SQLite binding (`sqlite3`), with SQLite JSON functions enabled.
-- Tcllib's `uuid` and `sha256` packages.
 
-The ZeroMQ-compatible transport implementation is included in `lib/zmq`; the external `tclzmq` package and `libzmq` are not required. A Jupyter installation is also needed to launch the kernel.
+The SHA-256/HMAC implementation is vendored from Tcllib in `lib/sha256`. The ZeroMQ-compatible transport implementation is included in `lib/zmq`; the external `tclzmq` package and `libzmq` are not required. A Jupyter installation is also needed to launch the kernel.
+
+Message IDs are generated from the process ID, Tcl's clock ticks, and a per-process counter, so no UUID package is needed.
 
 Python and `uv` are only needed for the test suite (and `uv` is used by the Unix `make install` target to locate Jupyter).
 ## Supported
@@ -125,5 +126,3 @@ sequenceDiagram
 ```
 
 The main thread (`lib/tclkernel`) owns the ZMQ sockets and routing. User code runs in a worker thread (`lib/sessionclient`) inside a `child` interpreter, so a running cell can be interrupted with `thread::cancel`. The two threads communicate with `thread::send -async`, and the worker's `stdout` and `stderr` are intercepted with `chan push` and sent to the notebook as `stream` messages.
-
-
