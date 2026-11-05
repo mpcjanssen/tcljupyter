@@ -30,10 +30,11 @@ The SHA-256/HMAC implementation is vendored from Tcllib in `lib/sha256`. The Zer
 
 Message IDs are generated from the process ID, Tcl's clock ticks, and a per-process counter, so no UUID package is needed.
 
-Python and `uv` are only needed for the test suite (and `uv` is used by the Unix `make install` target to locate Jupyter).
+Jupyter itself runs on Python. `uv` is needed for the test suite and for the Unix `make install` target, which uses it to locate Jupyter's data directory; `make install-docker` does not use `uv`.
+
 ## Supported
 
-Most web client commands are supported. Only thing missing is reading from stdin with for example `gets`. 
+Most web client commands are supported. `gets stdin` prompts for input in the notebook when the frontend allows stdin; `read stdin` is not supported.
 
 ### Commands
 
@@ -45,7 +46,7 @@ Most web client commands are supported. Only thing missing is reading from stdin
 
 ### Magic commands
 
-Magics are lines starting with `%%` at the top of the cell.
+Magics are lines starting with `##` at the top of the cell.
 
    * `##timeit ?count?`: Time the execution of the cell and display the results. Changing count will execute the cell multiple times and show the average time.
    * `##noresult`: Do not show the last result. This is convenient if the last result is very large. The same effect can be achieved by appending `;` to the last command of the cell.
