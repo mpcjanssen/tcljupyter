@@ -3,6 +3,7 @@
 # Override with e.g. `make install KERNEL_DIR=~/.local/share/jupyter/kernels/tcljupyter`
 DATA_DIR = $(shell uv run jupyter --data-dir)
 KERNEL_DIR ?= $(DATA_DIR)/kernels/tcljupyter
+VENV ?= /venv
 
 check-uv:
 	@command -v uv >/dev/null 2>&1 || { echo "Error: uv not found in PATH. Install it from https://docs.astral.sh/uv/" >&2; exit 1; }
@@ -27,7 +28,7 @@ install-docker:
 	cp logo-svg.svg "$$spec_dir/"; \
 	printf '{"argv":["%s","%s/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}\n' \
 		"$$tclsh" "$(CURDIR)" > "$$spec_dir/kernel.json"; \
-	jupyter kernelspec install --user --replace --name tcljupyter "$$spec_dir"
+	$(VENV)/bin/jupyter kernelspec install --user --replace --name tcljupyter "$$spec_dir"
 
 test: check-uv
 	@set -eu; \
