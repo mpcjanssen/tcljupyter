@@ -45,9 +45,6 @@ ls &&\
 make && make install 
 
 
-# Install tcljupyter
-RUN git clone https://github.com/mpcjanssen/tcljupyter
-
 ## Install tclcurl
 #
 #RUN fossil clone https://fossil.mpcjanssen.nl/tclcurl --user=root &&\
@@ -61,9 +58,10 @@ RUN \
     apk update &&\
     apk add --no-cache tcl-tls
 
-# Install
-RUN mkdir -p /home/tcljupyter/.local/share/jupyter/kernels/tcl && echo '{"argv":["tclsh9.0","/src/tcljupyter/init.tcl","{connection_file}"],"display_name":"Tcl 9","language":"tcl","interrupt_mode":"message" }' > /home/tcljupyter/.local/share/jupyter/kernels/tcl/kernel.json && mkdir -p ${CONFIG}
-COPY logo-svg.svg /home/tcljupyter/.local/share/jupyter/kernels/tcl/ 
+# Install tcljupyter
+RUN git clone https://github.com/mpcjanssen/tcljupyter &&\
+cd tcljupyter &&\
+make install
 
 # Expose Jupyter port and start Jupyter
 EXPOSE ${PORT}
