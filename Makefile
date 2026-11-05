@@ -1,4 +1,4 @@
-.PHONY: test install check-uv
+.PHONY: test install install-docker check-uv
 
 # Override with e.g. `make install KERNEL_DIR=~/.local/share/jupyter/kernels/tcljupyter`
 DATA_DIR = $(shell uv run jupyter --data-dir)
@@ -16,6 +16,18 @@ install: check-uv
 	printf '{"argv":["%s","%s/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}\n' \
 		"$$tclsh" "$$(pwd)" > "$(KERNEL_DIR)/kernel.json"; \
 	echo "Installed tcljupyter kernel to $(KERNEL_DIR)"
+
+install-docker:
+	@set -eu; \
+	tclsh=$${TCLSH:-$$(command -v tclsh9.1 || command -v tclsh)}; \
+	spec_root=$$(mktemp -d); \
+	trap 'rm -rf "$$spec_root"' EXIT; \
+	spec_dir="$$spec_root/tcljupyter"; \
+	mkdir -p "$$spec_dir"; \
+	cp logo-svg.svg "$$spec_dir/"; \
+	printf '{"argv":["%s","%s/init.tcl","{connection_file}"],"display_name":"Tcl","language":"tcl","interrupt_mode":"message"}\n' \
+		"$$tclsh" "$(CURDIR)" > "$$spec_dir/kernel.json"; \
+	jupyter kernelspec install --user --replace --name tcljupyter "$$spec_dir"
 
 test: check-uv
 	@set -eu; \

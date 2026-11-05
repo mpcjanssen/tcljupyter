@@ -15,7 +15,7 @@ Jupyter uses `kernel.json` to start the kernel and passes the connection file as
 
 ### Docker
 
-The `docker` folder contains a `Dockerfile` for building a tcljupyter container based on Alpine. An example `docker-compose.yml` file is provided.
+The `docker` folder contains a `Dockerfile` for building a tcljupyter container based on Alpine. It installs the kernel spec with `make install-docker`, which calls `jupyter kernelspec install` directly and installs under the Docker user's Jupyter data directory without `uv`. An example `docker-compose.yml` file is provided.
 
 Prebuilt images for amd64 and arm64 are on [Docker Hub](https://hub.docker.com/r/mpcjanssen/tcljupyter).
 

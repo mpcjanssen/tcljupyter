@@ -5,8 +5,8 @@ export JUPYTER_CONFIG_DIR=${CONFIG}
 
 # Create a configfile in /config if it doesn't exist
 if [ ! -f ${CONFIG}/jupyter_lab_config.py ]; then
-	uv run jupyter-lab --generate-config
+	jupyter-lab --generate-config
 fi
 
-uv run jupyter-lab --ip=0.0.0.0 --port=${PORT} --no-browser \
+jupyter-lab --ip=0.0.0.0 --port=${PORT} --no-browser \
   --notebook-dir=${NOTEBOOKS}

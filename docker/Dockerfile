@@ -8,7 +8,6 @@ ENV NOTEBOOKS=/home/tcljupyter/notebooks
 ENV CONFIG=/home/tcljupyter/config
 ENV PORT=8888
 ENV TCLLIBPATH=/home/tcljupyter/tcl/lib
-ENV VENV=/venv
 
 RUN addgroup ${UGID}
 RUN adduser -D \
@@ -25,7 +24,7 @@ RUN \
 
 RUN \
     --mount=type=cache,target=/root/.cache \
-    uv install jupyterlab jupyterlab-git &&\
+    pip install jupyterlab jupyterlab-git &&\
 
 
 # Install tcl9
@@ -60,7 +59,7 @@ RUN \
 # Install tcljupyter
 RUN git clone https://github.com/mpcjanssen/tcljupyter &&\
 cd tcljupyter &&\
-make install
+make install-docker
 
 # Expose Jupyter port and start Jupyter
 EXPOSE ${PORT}
